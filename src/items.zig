@@ -158,14 +158,14 @@ const Modifier = struct {
 		const Data = packed struct(u128) { pad: u128 };
 		combineModifiers: *const fn (data1: Data, data2: Data) ?Data,
 		changeProceduralItemParameters: *const fn (proceduralItem: *ProceduralItem, data: Data) void,
-		changeBlockDamage: *const fn (damage: f32, block: main.blocks.Block, data: Data) f32,
+		changeBlockDamage: *const fn (damage: f32, block: Block, data: Data) f32,
 		printTooltip: *const fn (outString: *main.List(u8), data: Data) void,
 		loadData: *const fn (zon: ZonElement) Data,
 		priority: f32,
 
 		const Defaults = struct {
 			pub fn changeProceduralItemParameters(_: *ProceduralItem, _: Data) void {}
-			pub fn changeBlockDamage(damage: f32, _: main.blocks.Block, _: Data) f32 {
+			pub fn changeBlockDamage(damage: f32, _: Block, _: Data) f32 {
 				return damage;
 			}
 		};
@@ -195,7 +195,7 @@ const Modifier = struct {
 		self.vTable.changeProceduralItemParameters(proceduralItem, self.data);
 	}
 
-	pub fn changeBlockDamage(self: Modifier, damage: f32, block: main.blocks.Block) f32 {
+	pub fn changeBlockDamage(self: Modifier, damage: f32, block: Block) f32 {
 		return self.vTable.changeBlockDamage(damage, block, self.data);
 	}
 
@@ -505,6 +505,8 @@ const ProceduralItemPhysics = struct { // MARK: ProceduralItemPhysics
 			mod.changeProceduralItemParameters(proceduralItem);
 		}
 
+		proceduralItem.setProperty(.damage, @round(10*proceduralItem.getProperty(.damage))/10);
+		proceduralItem.setProperty(.swingSpeed, @round(10*proceduralItem.getProperty(.swingSpeed))/10);
 		proceduralItem.setProperty(.maxDurability, @round(proceduralItem.getProperty(.maxDurability)));
 		if (proceduralItem.getProperty(.maxDurability) < 1) proceduralItem.setProperty(.maxDurability, 1);
 		proceduralItem.durability = std.math.lossyCast(u32, proceduralItem.getProperty(.maxDurability));
@@ -858,8 +860,8 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 		self.tooltip.clearRetainingCapacity();
 		self.tooltip.print(
 			\\{s}
-			\\{d:.2} swings/s
-			\\Damage: {d:.2}
+			\\{d:.1} swings/s
+			\\Damage: {d:.1}
 			\\Durability: {}/{}
 		, .{
 			self.type.id(),
@@ -886,14 +888,14 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 		return false;
 	}
 
-	pub fn isEffectiveOn(self: *ProceduralItem, block: main.blocks.Block) bool {
+	pub fn isEffectiveOn(self: *ProceduralItem, block: Block) bool {
 		for (block.tags()) |tag| {
 			if (self.hasTag(tag)) return true;
 		}
 		return false;
 	}
 
-	pub fn getBlockDamage(self: *ProceduralItem, block: main.blocks.Block) f32 {
+	pub fn getBlockDamage(self: *ProceduralItem, block: Block) f32 {
 		var damage = self.getProperty(.damage);
 		for (self.modifiers) |modifier| {
 			damage = modifier.changeBlockDamage(damage, block);
