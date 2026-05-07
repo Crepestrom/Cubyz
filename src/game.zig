@@ -651,9 +651,31 @@ pub fn update(deltaTime: f64) void { // MARK: update()
 
 	const gravity: f64 = if (Player.isFlying.load(.monotonic)) 0.0 else physics.baseGravity;
 	const jumpHeight: f64 = if (jumping) Player.jumpHeight else 0.0;
-	const motion = physics.calculateMotion(.client, deltaTime, Player.friction, Player.volumeProperties, physics.playerDensity, Player.super.pos, &Player.super.vel, acc, gravity, jumpHeight);
-	physics.calculateEyeMovement(.client, deltaTime, Player.super.pos, &Player.eye);
-	physics.update(.client, deltaTime, motion);
+	var motion = physics.calculateMotion(.client, deltaTime, Player.friction, Player.volumeProperties, physics.playerDensity, Player.super.pos, &Player.super.vel, acc, gravity, jumpHeight);
+
+	{
+		Player.mutex.lock();
+		defer Player.mutex.unlock();
+
+		var stepAmount: f64 = 0.0;
+		if (!Player.isGhost.load(.monotonic)) {
+			const steppingHeightLimit = Player.eye.pos[2] - Player.eye.box.min[2];
+			stepAmount = physics.calculateWallCollision(.client, &motion, &Player.super.pos, &Player.super.vel, &Player.onGround, Player.friction, Player.outerBoundingBox, Player.steppingHeight()[2], steppingHeightLimit, Player.crouching);
+		}
+		physics.calculateEyeMovement(.client, deltaTime, Player.super.pos, Player.super.vel, &Player.eye, stepAmount);
+		var didCollide: bool = false;
+		const wasOnGround = Player.onGround;
+		const prevPos = Player.super.pos;
+		const prevVel = Player.super.vel;
+		if (!Player.isGhost.load(.monotonic)) {
+			const bouncinessMultiplier: f64 = if (Player.isFlying.load(.monotonic)) 0.0 else if (Player.crouching) 0.5 else 1.0;
+			didCollide = physics.calculateVerticalCollision(.client, deltaTime, &Player.super.pos, &Player.super.vel, &Player.jumpCoyote, &Player.onGround, Player.outerBoundingBox, motion, bouncinessMultiplier);
+			if (didCollide) {
+				physics.calculateVerticalCollisionEyeMovement(&Player.eye, Player.onGround, wasOnGround, prevPos, Player.super.pos, prevVel, Player.super.vel, motion);
+			}
+		}
+		physics.update(.client, deltaTime, prevVel, Player.super.vel, didCollide, motion, wasOnGround);
+	}
 
 	const time = main.timestamp();
 	if (nextBlockPlaceTime) |*placeTime| {
