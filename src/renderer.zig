@@ -230,7 +230,7 @@ pub fn renderWorld(world: *World, ambientLight: Vec3f, skyColor: Vec3f, playerPo
 
 	chunk_meshing.beginRender();
 
-	var chunkLists: [main.settings.highestSupportedLod + 1]main.List(u32) = @splat(main.List(u32).init(main.stackAllocator));
+	var chunkLists: [main.settings.highestSupportedLod + 1]main.ListManaged(u32) = @splat(main.ListManaged(u32).init(main.stackAllocator));
 	defer for (chunkLists) |list| list.deinit();
 	for (meshes) |mesh| {
 		mesh.prepareRendering(&chunkLists);
@@ -571,17 +571,17 @@ pub const MenuBackGround = struct {
 		// Otherwise load a random texture from the backgrounds folder. The player may make their own pictures which can be chosen as well.
 		var walker = dir.walk(main.stackAllocator);
 		defer walker.deinit();
-		var fileList = main.List([]const u8).init(main.stackAllocator);
+		var fileList: main.List([]const u8) = .{};
 		defer {
 			for (fileList.items) |fileName| {
 				main.stackAllocator.free(fileName);
 			}
-			fileList.deinit();
+			fileList.deinit(main.stackAllocator);
 		}
 
 		while (try walker.next(main.io)) |entry| {
 			if (entry.kind == .file and std.ascii.endsWithIgnoreCase(entry.basename, ".png")) {
-				fileList.append(main.stackAllocator.dupe(u8, entry.path));
+				fileList.append(main.stackAllocator, main.stackAllocator.dupe(u8, entry.path));
 			}
 		}
 		if (fileList.items.len == 0) {
@@ -720,7 +720,7 @@ pub const Skybox = struct {
 	}
 
 	fn init() void {
-		const starColorImage = graphics.Image.readFromFile(main.stackAllocator, "assets/cubyz/star.png") catch |err| {
+		const starColorImage = graphics.Image.readFromFile(main.stackAllocator, "assets/cubyz/star.png", .{.orientation = .openGl}) catch |err| {
 			std.log.err("Failed to load star image: {s}", .{@errorName(err)});
 			return;
 		};
@@ -1078,7 +1078,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 
 			const relPos: Vec3f = @floatCast(lastPos - @as(Vec3d, @floatFromInt(selectedPos)));
 
-			main.sync.ClientSide.mutex.lock();
+			main.sync.client.mutex.lock();
 			if (!game.Player.isCreative()) {
 				var damage: f32 = main.game.Player.defaultBlockDamage;
 				const isProceduralItem = stack.item == .proceduralItem;
@@ -1111,7 +1111,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 						if (currentBlockProgress != 0) {
 							mesh_storage.addBreakingAnimation(lastSelectedBlockPos, currentBlockProgress);
 						}
-						main.sync.ClientSide.mutex.unlock();
+						main.sync.client.mutex.unlock();
 
 						return;
 					} else {
@@ -1121,7 +1121,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 						currentSwingTime = 0;
 					}
 				} else {
-					main.sync.ClientSide.mutex.unlock();
+					main.sync.client.mutex.unlock();
 					return;
 				}
 			} else {
@@ -1130,7 +1130,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 
 			var newBlock = block;
 			block.mode().onBlockBreaking(inventory.getStack(slot).item, relPos, lastDir, &newBlock);
-			main.sync.ClientSide.mutex.unlock();
+			main.sync.client.mutex.unlock();
 
 			if (newBlock != block) {
 				updateBlockAndSendUpdate(inventory, slot, selectedPos, block, newBlock);
@@ -1139,7 +1139,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 	}
 
 	fn updateBlockAndSendUpdate(source: main.items.Inventory.ClientInventory, slot: u32, pos: Vec3i, oldBlock: blocks.Block, newBlock: blocks.Block) void {
-		main.sync.ClientSide.executeCommand(.{
+		main.sync.client.executeCommand(.{
 			.updateBlock = .{
 				.source = .{.inv = source.super, .slot = slot},
 				.pos = pos,
