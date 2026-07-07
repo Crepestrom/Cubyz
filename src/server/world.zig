@@ -320,6 +320,7 @@ pub const ChunkManager = struct { // MARK: ChunkManager
 	}
 
 	pub fn deinit(_: ChunkManager) void {
+		main.threadPool.updateTaskPriority();
 		for (0..main.settings.highestSupportedLod) |_| {
 			chunkCache.clear();
 		}
@@ -526,6 +527,7 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 		self.chunkManager = try ChunkManager.init(self, worldData.getChild("generatorSettings"));
 		errdefer self.chunkManager.deinit();
 
+		try permission.loadGroups(try dir.openIterableDir("groups"));
 		std.debug.assert(main.entityModel.getById("cubyz:missing") != null);
 
 		return self;
@@ -541,8 +543,14 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 	}
 
 	pub fn deinit(self: *ServerWorld) void {
-		self.forceSave() catch |err| {
-			std.log.err("Error while saving the world: {s}", .{@errorName(err)});
+		self.saveWorldConfig() catch |err| {
+			std.log.err("Error while saving world config: {s}", .{@errorName(err)});
+		};
+		self.saveAllPlayers() catch |err| {
+			std.log.err("Error while saving player data: {s}", .{@errorName(err)});
+		};
+		self.saveItemdrops() catch |err| {
+			std.log.err("Error while saving item data: {s}", .{@errorName(err)});
 		};
 		while (self.chunkUpdateQueue.popFront()) |updateRequest| {
 			updateRequest.ch.save(self);
@@ -562,6 +570,7 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 		self.biomePalette.deinit();
 		self.entityModelPalette.deinit();
 		self.entityComponentPalette.deinit();
+		permission.deinit();
 		main.globalAllocator.free(self.path);
 		main.globalAllocator.free(self.name);
 		main.globalAllocator.destroy(self);
@@ -1075,12 +1084,7 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 		}
 	}
 
-	pub fn forceSave(self: *ServerWorld) !void {
-		// TODO: Save chunks and player data
-		try self.saveWorldConfig();
-
-		try self.saveAllPlayers();
-
+	fn saveItemdrops(self: *ServerWorld) !void {
 		var itemDropData = main.utils.BinaryWriter.init(main.stackAllocator);
 		defer itemDropData.deinit();
 		self.itemDropManager.storeToBytes(&itemDropData);
@@ -1268,6 +1272,13 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 			var neighborBlock = ch.getBlock(neighborPos.x, neighborPos.y, neighborPos.z);
 			if (neighborBlock.mode().dependsOnNeighbors and neighborBlock.mode().updateData(&neighborBlock, neighbor.reverse(), newBlock)) {
 				ch.updateBlockAndSetChanged(neighborPos.x, neighborPos.y, neighborPos.z, neighborBlock);
+
+				const userList = server.getUserListAndIncreaseRefCount(main.stackAllocator);
+				defer server.freeUserListAndDecreaseRefCount(main.stackAllocator, userList);
+
+				for (userList) |user| {
+					main.network.protocols.blockUpdate.send(user.conn, &.{.{.pos = .{wx +% neighbor.relX(), wy +% neighbor.relY(), wz +% neighbor.relZ()}, .newBlock = neighborBlock, .blockEntityData = &.{}}});
+				}
 			}
 			if (newBlock.mode().dependsOnNeighbors) {
 				_ = newBlock.mode().updateData(&newBlock, neighbor, neighborBlock);
