@@ -22,7 +22,7 @@ const Vec3f = vec.Vec3f;
 
 const modifierList = @import("proceduralItem/modifiers/_list.zig");
 const modifierRestrictionList = @import("proceduralItem/modifiers/restrictions/_list.zig");
-
+pub var thing = main.worldArena.alloc(main.Tag, 1);
 pub const recipes = @import("items/recipes.zig");
 
 pub const Inventory = @import("Inventory.zig");
@@ -72,7 +72,7 @@ const Material = struct { // MARK: Material
 			const id = item.get([]const u8, "id") orelse "not specified";
 			const vTable = modifiers.get(id) orelse blk: {
 				std.log.err("Couldn't find modifier with id '{s}'. Replacing it with 'durable'", .{id});
-				break :blk modifiers.get("durable").?;
+				break :blk modifiers.get("durable") orelse unreachable;
 			};
 			modifier.* = .{
 				.vTable = vTable,
@@ -104,7 +104,7 @@ const Material = struct { // MARK: Material
 			outString.appendSlice("§#808080Material\n");
 		}
 		for (self.modifiers) |modifier| {
-			if (modifier.restriction.vTable == modifierRestrictions.get("always").?) {
+			if (modifier.restriction.vTable == modifierRestrictions.get("always") orelse unreachable) {
 				modifier.printTooltip(outString);
 				outString.appendSlice("\n");
 			} else {
@@ -136,7 +136,7 @@ pub const ModifierRestriction = struct {
 		const id = zon.get([]const u8, "id") orelse "always";
 		const vTable = modifierRestrictions.get(id) orelse blk: {
 			std.log.err("Couldn't find modifier restriction with id '{s}'. Replacing it with 'always'", .{id});
-			break :blk modifierRestrictions.get("always").?;
+			break :blk modifierRestrictions.get("always") orelse unreachable;
 		};
 		return .{
 			.vTable = vTable,
