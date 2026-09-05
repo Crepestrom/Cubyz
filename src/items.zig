@@ -146,10 +146,15 @@ pub const ModifierRestriction = struct {
 		satisfied: *const fn (data: *anyopaque, proceduralItem: *const ProceduralItem, x: i32, y: i32) bool,
 		loadFromZon: *const fn (allocator: NeverFailingAllocator, zon: ZonElement) *anyopaque,
 		printTooltip: *const fn (data: *anyopaque, outString: *main.ListManaged(u8)) void,
+		printSatisfiedGrid: *const fn (data: *anyopaque) [25]?BaseItemIndex,
 	};
 
 	pub fn satisfied(self: ModifierRestriction, proceduralItem: *const ProceduralItem, x: i32, y: i32) bool {
 		return self.vTable.satisfied(self.data, proceduralItem, x, y);
+	}
+
+	pub fn printSatisfiedGrid(self: ModifierRestriction) [25]?BaseItemIndex {
+		return self.vTable.printSatisfiedGrid(self.data);
 	}
 
 	pub fn loadFromZon(allocator: NeverFailingAllocator, zon: ZonElement) ModifierRestriction {
@@ -1005,10 +1010,11 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 		return hash;
 	}
 
-	pub fn getItemAt(self: *const ProceduralItem, x: i32, y: i32) ?BaseItemIndex {
+	pub fn getItemAt(self: *const ProceduralItem, x: i32, y: i32, craftingGrid: [craftingGridSize]?BaseItemIndex) ?BaseItemIndex {
+		_ = self;
 		if (x < 0 or x >= 5) return null;
 		if (y < 0 or y >= 5) return null;
-		return self.craftingGrid[@intCast(x + y*5)];
+		return craftingGrid[@intCast(x + y*5)];
 	}
 
 	pub fn getProperty(self: *ProceduralItem, prop: ProceduralItemProperty) f32 {
@@ -1232,10 +1238,15 @@ pub const Item = union(ItemType) { // MARK: Item
 		};
 	}
 
-	pub fn render(self: Item, pos: Vec2f, slotSize: Vec2f, border: f32) void {
+
+	pub fn render(self: Item, pos: Vec2f, slotSize: Vec2f, border: f32, color: u32) void {
 		const itemTexture = self.getTexture();
 		itemTexture.bindTo(0);
-		graphics.draw.boundImage(pos + @as(Vec2f, @splat(border)), slotSize - @as(Vec2f, @splat(2*border)));
+		{
+			const oldColor = graphics.draw.setColor(color);
+			defer graphics.draw.restoreColor(oldColor);
+			graphics.draw.boundImage(pos + @as(Vec2f, @splat(border)), slotSize - @as(Vec2f, @splat(2*border)));
+		}
 
 		if (self == .proceduralItem) {
 			const proceduralItem = self.proceduralItem;
