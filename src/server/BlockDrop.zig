@@ -11,15 +11,15 @@ const Block = blocks.Block;
 
 pub const DropStyle = enum(u1) {
 	dropAll = 0,
-	pickAmmount = 1,
+	PickAmmount = 1,
 };
 
-dropStyle: DropStyle,
-pickedAmmount: u32,
-itemStacks: []const items.ItemStack,
+itemStacks: []const ?items.ItemStack,
 chance: f32,
 forbiddenToolTags: []Tag,
 allowedToolTags: ?[]Tag = null,
+dropStyle: DropStyle,
+numberPicked: u32,
 
 pub fn isDroppedWhenBrokenWithItem(self: @This(), item: Item) bool {
 	if (item != .proceduralItem) return self.allowedToolTags == null;
@@ -38,18 +38,31 @@ pub fn drop(self: @This(), pos: Vec3d, dir: Vec3f, velocity: f32) void {
 	switch (self.dropStyle) {
 		.dropAll => if (self.chance == 1 or main.random.nextFloat(&main.seed) < self.chance) {
 			for (self.itemStacks) |itemStack| {
-				main.server.world.?.drop(itemStack.clone(), pos, dir, velocity);
+				const stack = itemStack orelse continue;
+				if (itemStack != null) main.server.world.?.drop(stack.clone(), pos, dir, velocity);
 			}
 		},
-		.pickAmmount => if (self.chance == 1 or main.random.nextFloat(&main.seed) < self.chance) {
-			if (self.pickedAmmount == 1) {
-
+		.PickAmmount => if (self.chance == 1 or main.random.nextFloat(&main.seed) < self.chance) {
+			var randomRange: main.random.RandomRange(f32) = .init(0, @floatFromInt(self.itemStacks.len));
+			if (self.numberPicked == 1) {
+				const droppedItem = self.itemStacks[@intFromFloat(randomRange.get(&main.seed))] orelse return;
+				main.server.world.?.drop(droppedItem.clone(), pos, dir, velocity);
 			} else {
-				var pickedItems = main.list
+				var pickedItems = main.List(?items.ItemStack).initCapacity(main.stackAllocator, self.numberPicked);
+				defer pickedItems.deinit(main.stackAllocator);
+				pickedItems.appendSlice(main.stackAllocator, self.itemStacks);
+				for (0..self.numberPicked) |_| {
+					const randomNum: usize = @intFromFloat(randomRange.get(&main.seed));
+					blk: {
+						const droppedItem = pickedItems.items[randomNum] orelse break :blk;
+						main.server.world.?.drop(droppedItem.clone(), pos, dir, velocity);
+					}
+					_ = pickedItems.swapRemove(randomNum);
+					randomRange.max = @floatFromInt(pickedItems.items.len);
+				}
 			}
 		},
 	}
-	
 }
 
 pub const Location = struct {
