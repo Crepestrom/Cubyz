@@ -144,8 +144,8 @@ pub fn run(self: *@This(), params: main.callbacks.ServerBlockCallback.Params) ma
 						@as(f32, @floatFromInt(wx)) + model.min[0] + main.random.nextFloat(&main.seed)*(model.max[0] - model.min[0]),
 						@as(f32, @floatFromInt(wy)) + model.min[1] + main.random.nextFloat(&main.seed)*(model.max[1] - model.min[1]),
 						@as(f32, @floatFromInt(wz)) + model.min[2] + main.random.nextFloat(&main.seed)*(model.max[2] - model.min[2]),
-				};
-				drop.drop(pos, dir, 1);
+					};
+					drop.drop(pos, dir, 1);
 				}
 				return .handled;
 			}
