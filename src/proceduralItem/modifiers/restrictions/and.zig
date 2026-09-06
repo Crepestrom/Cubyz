@@ -20,19 +20,20 @@ pub fn satisfied(self: *const And, proceduralItem: *const ProceduralItem, x: i32
 pub fn printCheckedGrid(self: *const And, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) [25]main.items.Checked {
 	var checkedGrid: [25]main.items.Checked = @splat(.notChecked);
 	for (0..25) |i| {
-		var newTag: main.items.Checked = .notChecked;
+		var newTag: main.items.Checked = .always;
 		for (self.children) |child| {
 			const searchedCheckedGrid = child.printCheckedGrid(givenGrid, x, y)[i];
 			switch (searchedCheckedGrid) {
 				.invalidTag => {
-					newTag = .invalidTag;
-					break;
+					newTag = .invalidTag; break;
 				},
-				.validTag => if ((newTag == .notChecked) or (newTag == .always)) {
+				.validTag => if (newTag != .invalidTag) {
 					newTag = .validTag;
 				},
-				.notChecked => continue,
-				.always => if ((newTag == .notChecked)) {
+				.notChecked => if ((newTag != .validTag) and (newTag != .invalidTag)) {
+					newTag = .invalidTag;
+				},
+				.always => if (newTag == .always) {
 					newTag = .always;
 				},
 			}

@@ -74,16 +74,20 @@ fn updateModifierRestrictionVisuals(hoveredSlotNumber: usize) void {
 	const y: i32 = @intCast(@divFloor(hoveredSlotNumber, 5));
 	for (0..25) |i| {
 		if (i == hoveredSlotNumber) continue;
-		var newTag: main.items.Checked = .notChecked;
+		var newTag: main.items.Checked = .always;
 		for (material.modifiers) |modifier| {
 			const searchedCheckedGrid = modifier.restriction.printCheckedGrid(slotItems, x, y)[i];
 			switch (searchedCheckedGrid) {
-				.validTag => {newTag = .validTag; break;},
-				.invalidTag => if (newTag == .notChecked) {
+				.validTag => {
+					newTag = .validTag; break;
+				},
+				.invalidTag => if (newTag != .validTag) {
 					newTag = .invalidTag;
 				},
-				.notChecked => continue,
-				.always => if (newTag != .validTag) {
+				.notChecked => if ((newTag != .validTag) and (newTag != .invalidTag)) {
+					newTag = .invalidTag;
+				},
+				.always => if (newTag == .always) {
 					newTag = .always;
 				},
 			}
