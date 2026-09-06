@@ -25,7 +25,7 @@ pub fn printCheckedGrid(self: *const Encased, givenGrid: [25]?main.items.BaseIte
 	var checkedGrid: [25]main.items.Checked = @splat(.notChecked);
 	for ([_]i32{-1, 0, 1}) |dx| {
 		for ([_]i32{-1, 0, 1}) |dy| {
-			ProceduralItem.getCheckedAt( x + dx, y + dy, givenGrid, self.tag, &checkedGrid);
+			ProceduralItem.getCheckedAt(x + dx, y + dy, givenGrid, self.tag, &checkedGrid);
 		}
 	}
 	return checkedGrid;
