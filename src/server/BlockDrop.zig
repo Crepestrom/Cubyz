@@ -9,6 +9,13 @@ const Vec3i = vec.Vec3i;
 const blocks = main.blocks;
 const Block = blocks.Block;
 
+pub const DropStyle = enum(u1) {
+	dropAll = 0,
+	pickAmmount = 1,
+};
+
+dropStyle: DropStyle,
+pickedAmmount: u32,
 itemStacks: []const items.ItemStack,
 chance: f32,
 forbiddenToolTags: []Tag,
@@ -28,11 +35,21 @@ pub fn isDroppedWhenBrokenWithItem(self: @This(), item: Item) bool {
 }
 
 pub fn drop(self: @This(), pos: Vec3d, dir: Vec3f, velocity: f32) void {
-	if (self.chance == 1 or main.random.nextFloat(&main.seed) < self.chance) {
-		for (self.itemStacks) |itemStack| {
-			main.server.world.?.drop(itemStack.clone(), pos, dir, velocity);
-		}
+	switch (self.dropStyle) {
+		.dropAll => if (self.chance == 1 or main.random.nextFloat(&main.seed) < self.chance) {
+			for (self.itemStacks) |itemStack| {
+				main.server.world.?.drop(itemStack.clone(), pos, dir, velocity);
+			}
+		},
+		.pickAmmount => if (self.chance == 1 or main.random.nextFloat(&main.seed) < self.chance) {
+			if (self.pickedAmmount == 1) {
+
+			} else {
+				var pickedItems = main.list
+			}
+		},
 	}
+	
 }
 
 pub const Location = struct {
