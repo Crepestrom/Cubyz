@@ -5,7 +5,6 @@ const NeverFailingAllocator = main.heap.NeverFailingAllocator;
 const ModifierRestriction = main.items.ModifierRestriction;
 const ProceduralItem = main.items.ProceduralItem;
 const ZonElement = main.ZonElement;
-const BaseItemIndex = main.items.BaseItemIndex;
 
 const Encased = struct {
 	tag: main.Tag,
@@ -16,19 +15,20 @@ pub fn satisfied(self: *const Encased, proceduralItem: *const ProceduralItem, x:
 	var count: usize = 0;
 	for ([_]i32{-1, 0, 1}) |dx| {
 		for ([_]i32{-1, 0, 1}) |dy| {
-			if ((proceduralItem.getItemAt(x + dx, y + dy, proceduralItem.craftingGrid) orelse continue).hasTag(self.tag)) count += 1;
+			if ((ProceduralItem.getItemAt(x + dx, y + dy, proceduralItem.craftingGrid) orelse continue).hasTag(self.tag)) count += 1;
 		}
 	}
 	return count >= self.amount;
 }
 
-pub fn printSatisfiedGrid(self: ModifierRestriction, givenGrid: [25]?BaseItemIndex, x: i32, y: i32) [25]?BaseItemIndex {
-	var count: usize = 0;
+pub fn printCheckedGrid(self: *const Encased, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) struct { [25]main.items.Checked, bool } {
+	var checkedGrid: struct { [25]main.items.Checked, bool } = @splat(.notChecked);
 	for ([_]i32{-1, 0, 1}) |dx| {
 		for ([_]i32{-1, 0, 1}) |dy| {
-			if ((ProceduralItem.getItemAt(.{}, x + dx, y + dy, givenGrid) orelse continue).hasTag(self.tag)) count += 1;
+			ProceduralItem.getCheckedAt( x + dx, y + dy, givenGrid, self.tag, &checkedGrid);
 		}
 	}
+	return checkedGrid;
 }
 
 pub fn loadFromZon(allocator: NeverFailingAllocator, zon: ZonElement) *const Encased {

@@ -17,6 +17,23 @@ pub fn satisfied(self: *const And, proceduralItem: *const ProceduralItem, x: i32
 	return true;
 }
 
+pub fn printCheckedGrid(self: *const And, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) struct { [25]main.items.Checked, bool } {
+	var checkedGrid: struct { [25]main.items.Checked, bool } = @splat(.notChecked);
+	for (0..25) |i| {
+		var newTag: main.items.Checked = .notChecked;
+		for (self.children) |child| {
+			const searchedCheckedGrid = child.printCheckedGrid(givenGrid, x, y)[i];
+			switch (searchedCheckedGrid) {
+				.invalidTag => {newTag = .invalidTag; break;},
+				.validTag => if (newTag == .notChecked) {newTag = .validTag; continue;},
+				.notChecked => continue,
+			}
+		}
+		checkedGrid[i] = newTag;
+	}
+	return checkedGrid;
+}
+
 pub fn loadFromZon(allocator: NeverFailingAllocator, zon: ZonElement) *const And {
 	const result = allocator.create(And);
 	const childrenZon = zon.getChild("children").toSlice();

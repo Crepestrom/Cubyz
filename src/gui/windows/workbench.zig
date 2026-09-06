@@ -61,12 +61,34 @@ fn updateResult(_: main.items.Inventory.Source) void {
 }
 
 fn updateModifierRestrictionVisuals(hoveredSlotNumber: usize) void {
-	for (itemSlots) |slot| {
+	var slotItems: [25]?main.items.BaseItemIndex = @splat(null);
+	for (itemSlots, 0..) |slot, i| {
 		slot.itemColor = 0xffffffff;
+		slotItems[i] = if (slot.inventory.getItem(i) == .baseItem) slot.inventory.getItem(i).baseItem else null;
 	}
+	
 	const hoveredSlot = itemSlots[hoveredSlotNumber];
-	hoveredSlot.itemColor = 0xff000000;
-	hoveredSlot.inventory.getItem(hoveredSlotNumber).baseItem.material().?.modifiers[0].restriction.printSatisfiedGrid();
+	const material = hoveredSlot.inventory.getItem(hoveredSlotNumber).baseItem.material() orelse return;
+	if (material.modifiers.len == 0) return;
+	const x: i32 = if (hoveredSlotNumber != 0) @intCast(@mod(hoveredSlotNumber, 5) )else 0;
+	const y: i32 = @intCast(@divFloor(hoveredSlotNumber, 5));
+	for (0..25) |i| {
+		if (i == hoveredSlotNumber) continue;
+		var newTag: main.items.Checked = .notChecked;
+		for (material.modifiers) |modifier| {
+			const searchedCheckedGrid = modifier.restriction.printCheckedGrid(slotItems, x, y)[i];
+			switch (searchedCheckedGrid) {
+				.validTag => {newTag = .validTag; break;},
+				.invalidTag => if (newTag == .notChecked) {newTag = .invalidTag; continue;},
+				.notChecked => continue,
+			}
+		}
+		switch (newTag) {
+			.validTag => itemSlots[i].itemColor = 0xdfffffff,
+			.invalidTag => itemSlots[i].itemColor = 0xefeebbbb,
+			.notChecked => itemSlots[i].itemColor = 0x33eeeeff,
+		}
+	}
 }
 
 fn openInventory() void {

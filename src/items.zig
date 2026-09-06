@@ -146,15 +146,15 @@ pub const ModifierRestriction = struct {
 		satisfied: *const fn (data: *anyopaque, proceduralItem: *const ProceduralItem, x: i32, y: i32) bool,
 		loadFromZon: *const fn (allocator: NeverFailingAllocator, zon: ZonElement) *anyopaque,
 		printTooltip: *const fn (data: *anyopaque, outString: *main.ListManaged(u8)) void,
-		printSatisfiedGrid: *const fn (data: *anyopaque) [25]?BaseItemIndex,
+		printCheckedGrid: *const fn (data: *anyopaque, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) [25]Checked,
 	};
 
 	pub fn satisfied(self: ModifierRestriction, proceduralItem: *const ProceduralItem, x: i32, y: i32) bool {
 		return self.vTable.satisfied(self.data, proceduralItem, x, y);
 	}
 
-	pub fn printSatisfiedGrid(self: ModifierRestriction) [25]?BaseItemIndex {
-		return self.vTable.printSatisfiedGrid(self.data);
+	pub fn printCheckedGrid(self: ModifierRestriction, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) [25]Checked {
+		return self.vTable.printCheckedGrid(self.data, givenGrid, x, y);
 	}
 
 	pub fn loadFromZon(allocator: NeverFailingAllocator, zon: ZonElement) ModifierRestriction {
@@ -819,6 +819,12 @@ const ProceduralItemProperty = enum {
 	}
 };
 
+pub const Checked = enum(u8) {
+	notChecked = 0,
+	invalidTag = 1,
+	validTag = 2,
+};
+
 pub const ProceduralItem = struct { // MARK: ProceduralItem
 	const craftingGridSize = 25;
 	const CraftingGridMask = std.meta.Int(.unsigned, craftingGridSize);
@@ -1010,11 +1016,25 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 		return hash;
 	}
 
-	pub fn getItemAt(self: *const ProceduralItem, x: i32, y: i32, craftingGrid: [craftingGridSize]?BaseItemIndex) ?BaseItemIndex {
-		_ = self;
+	pub fn getItemAt(x: i32, y: i32, craftingGrid: [craftingGridSize]?BaseItemIndex) ?BaseItemIndex {
 		if (x < 0 or x >= 5) return null;
 		if (y < 0 or y >= 5) return null;
 		return craftingGrid[@intCast(x + y*5)];
+	}
+
+	pub fn getCheckedAt(x: i32, y: i32, craftingGrid: [craftingGridSize]?BaseItemIndex, tag: Tag, checkedGrid: *[25]Checked) void {
+		if (x < 0 or x >= 5) return;
+		if (y < 0 or y >= 5) return;
+		const item = ProceduralItem.getItemAt(x, y, craftingGrid);
+		const gridPos: usize = @intCast(x + y*5);
+		if (item == null) {
+			checkedGrid[gridPos] = .invalidTag;
+		} else if (item.?.hasTag(tag)) {
+			checkedGrid[gridPos] = .validTag;
+		} else {
+			std.log.debug("found invalid", .{});
+			checkedGrid[gridPos] = .invalidTag;
+		}
 	}
 
 	pub fn getProperty(self: *ProceduralItem, prop: ProceduralItemProperty) f32 {
@@ -1421,6 +1441,7 @@ pub fn globalInit() void {
 			.satisfied = comptime main.meta.castFunctionSelfToAnyopaque(ModifierRestrictionStruct.satisfied),
 			.loadFromZon = comptime main.meta.castFunctionReturnToAnyopaque(ModifierRestrictionStruct.loadFromZon),
 			.printTooltip = comptime main.meta.castFunctionSelfToAnyopaque(ModifierRestrictionStruct.printTooltip),
+			.printCheckedGrid = comptime main.meta.castFunctionSelfToAnyopaque(ModifierRestrictionStruct.printCheckedGrid),
 		}) catch unreachable;
 	}
 	Inventory.client.init();

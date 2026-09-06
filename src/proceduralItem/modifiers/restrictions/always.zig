@@ -9,6 +9,11 @@ pub fn satisfied(_: *const anyopaque, _: *const ProceduralItem, _: i32, _: i32) 
 	return true;
 }
 
+pub fn printCheckedGrid(_: *const anyopaque, _: [25]?main.items.BaseItemIndex, _: i32, _: i32) struct { [25]main.items.Checked, bool } {
+	const checkedGrid: struct { [25]main.items.Checked, bool } = @splat(.validTag);
+	return checkedGrid, false;
+}
+
 pub fn loadFromZon(_: NeverFailingAllocator, _: ZonElement) *const anyopaque {
 	return undefined;
 }
