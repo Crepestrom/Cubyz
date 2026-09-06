@@ -70,7 +70,7 @@ pub fn loadFromZon(allocator: NeverFailingAllocator, zon: ZonElement) *const Arb
 			break :blk "not specified";
 		}),
 		.amount = zon.get(usize, "amount", 1),
-		.checkArray = zon.getChild("checkArray"),
+		.checkArray = zon.getChild("checkArray").toSlice(),
 		.outputString = (zon.get(?[]const u8, "outputString", null) orelse blk: {
 			std.log.err("Missing field for the output string.", .{});
 			break :blk "not specified";
