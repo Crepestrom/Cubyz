@@ -70,7 +70,7 @@ fn updateModifierRestrictionVisuals(hoveredSlotNumber: usize) void {
 	const hoveredSlot = itemSlots[hoveredSlotNumber];
 	const material = hoveredSlot.inventory.getItem(hoveredSlotNumber).baseItem.material() orelse return;
 	if (material.modifiers.len == 0) return;
-	const x: i32 = if (hoveredSlotNumber != 0) @intCast(@mod(hoveredSlotNumber, 5) )else 0;
+	const x: i32 = if (hoveredSlotNumber != 0) @intCast(@mod(hoveredSlotNumber, 5)) else 0;
 	const y: i32 = @intCast(@divFloor(hoveredSlotNumber, 5));
 	for (0..25) |i| {
 		if (i == hoveredSlotNumber) continue;
@@ -79,9 +79,13 @@ fn updateModifierRestrictionVisuals(hoveredSlotNumber: usize) void {
 			const searchedCheckedGrid = modifier.restriction.printCheckedGrid(slotItems, x, y)[i];
 			switch (searchedCheckedGrid) {
 				.validTag => {newTag = .validTag; break;},
-				.invalidTag => if (newTag == .notChecked) {newTag = .invalidTag;},
+				.invalidTag => if (newTag == .notChecked) {
+					newTag = .invalidTag;
+				},
 				.notChecked => continue,
-				.always => if (newTag != .validTag) {newTag = .always;},
+				.always => if (newTag != .validTag) {
+					newTag = .always;
+				},
 			}
 		}
 		switch (newTag) {
@@ -109,7 +113,7 @@ fn openInventory() void {
 					.texture = if (slotInfo.disabled) .invisible else if (slotInfo.optional) .immutable else .default,
 					.mode = if (slotInfo.disabled) .immutable else .normal,
 					.onHover = .initWithInt(updateModifierRestrictionVisuals, @intCast(index)),
-					});
+				});
 				itemSlots[index] = slot;
 				row.add(slot);
 			}

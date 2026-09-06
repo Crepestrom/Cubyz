@@ -1259,7 +1259,6 @@ pub const Item = union(ItemType) { // MARK: Item
 		};
 	}
 
-
 	pub fn render(self: Item, pos: Vec2f, slotSize: Vec2f, border: f32, color: u32) void {
 		const itemTexture = self.getTexture();
 		itemTexture.bindTo(0);
