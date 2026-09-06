@@ -79,7 +79,8 @@ fn updateModifierRestrictionVisuals(hoveredSlotNumber: usize) void {
 			const searchedCheckedGrid = modifier.restriction.printCheckedGrid(slotItems, x, y)[i];
 			switch (searchedCheckedGrid) {
 				.validTag => {
-					newTag = .validTag; break;
+					newTag = .validTag;
+					break;
 				},
 				.invalidTag => if (newTag != .validTag) {
 					newTag = .invalidTag;
