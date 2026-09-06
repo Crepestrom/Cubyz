@@ -62,7 +62,7 @@
 		.{
 			.id = "cubyz:simple_vegetation",
 			.chance = 0.05,
-			.block = "cubyz:dry_grass_vegetation",
+			.block = "cubyz:grass/vegetation/dry",
 			.height = 1,
 			.height_variation = 0,
 		},

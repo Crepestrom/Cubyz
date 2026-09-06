@@ -63,7 +63,7 @@
 		.{
 			.id = "cubyz:simple_vegetation",
 			.chance = 0.11,
-			.block = "cubyz:dry_grass_vegetation",
+			.block = "cubyz:grass/vegetation/dry",
 			.height = 1,
 			.height_variation = 0,
 		},
@@ -71,7 +71,7 @@
 			.id = "cubyz:ground_patch",
 			.block = "cubyz:pebbles:cubyz:sand",
 			.chance = 0.05,
-			.width = 1,
+			.width = 2,
 			.variation = 1,
 			.depth = 1,
 			.smoothness = 0.6,
@@ -87,7 +87,7 @@
 	.parentBiomes = .{
 		.{
 			.id = "cubyz:arid_shrubland/base",
-			.chance = 25,
+			.chance = 5,
 		},
 	},
 }
