@@ -14,7 +14,7 @@
 	.hills = 18,
 	.validPlayerSpawn = true,
 	.ground_structure = .{
-		"cubyz:grass",
+		"cubyz:grass/temperate",
 		"cubyz:soil",
 	},
 	.structures = .{
@@ -69,7 +69,7 @@
 		},
 		.{
 			.id = "cubyz:flower_patch",
-			.blocks = .{"cubyz:grass_vegetation"},
+			.blocks = .{"cubyz:grass/vegetation/temperate"},
 			.chance = 0.1,
 			.width = 5,
 			.variation = 8,
@@ -104,7 +104,16 @@
 		.{
 			.id = "cubyz:flower_patch",
 			.blocks = .{"cubyz:daffodil"},
-			.chance = 0.007,
+			.chance = 0.004,
+			.width = 8,
+			.variation = 3,
+			.density = 0.1,
+			.priority = 0.1,
+		},
+		.{
+			.id = "cubyz:flower_patch",
+			.blocks = .{"cubyz:cornflower"},
+			.chance = 0.004,
 			.width = 8,
 			.variation = 3,
 			.density = 0.1,
