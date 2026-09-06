@@ -1,5 +1,5 @@
 .{
-	.chance = 0.02,
+	.chance = 0.01,
 	.properties = .{},
 	.minHeightLimit = 7,
 	.minHeight = 22,
@@ -15,7 +15,7 @@
 	.validPlayerSpawn = false,
 
 	.ground_structure = .{
-		"0 to 1 cubyz:slate/cobble",
+		"0 to 1 cubyz:slate/rough",
 	},
 	.structures = .{
 		.{

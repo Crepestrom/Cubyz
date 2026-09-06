@@ -169,7 +169,7 @@ pub const PublicKey = union(KeyTypeEnum) {
 };
 
 /// Also known as a seed phrase, implementation is based on BIP39 with some minor changes and limited to one word list
-pub const AccountCode = struct {
+pub const AccountCode = struct { // MARK: AccountCode
 	text: []u8,
 
 	fn printInvalidCharError(failureText: *main.ListManaged(u8), codepoint: u21) void {
@@ -286,7 +286,7 @@ pub const AccountCode = struct {
 
 const EncodingType = enum { none, argon2_aes_gcm };
 
-pub const PasswordEncodedAccountCode = struct {
+pub const PasswordEncodedAccountCode = struct { // MARK: PasswordEncodedAccountCode
 	typ: EncodingType,
 	salt: []u8,
 	nonce: []u8,
@@ -378,24 +378,24 @@ pub const PasswordEncodedAccountCode = struct {
 		if (zon == .null) return .empty;
 		var self: PasswordEncodedAccountCode = undefined;
 
-		self.typ = std.meta.stringToEnum(EncodingType, zon.get(?[]const u8, "type", null) orelse return error.Invalid) orelse return error.Invalid;
-		self.salt = allocator.dupe(u8, zon.get([]const u8, "salt", ""));
+		self.typ = std.meta.stringToEnum(EncodingType, zon.get([]const u8, "type") orelse return error.Invalid) orelse return error.Invalid;
+		self.salt = allocator.dupe(u8, zon.get([]const u8, "salt") orelse "");
 		errdefer allocator.free(self.salt);
 		if (self.salt.len < 32 and self.typ != .none) return error.Invalid;
 
-		const base64EncodedData = zon.get([]const u8, "data", "");
+		const base64EncodedData = zon.get([]const u8, "data") orelse "";
 		self.data = allocator.alloc(u8, try std.base64.standard.Decoder.calcSizeForSlice(base64EncodedData));
 		errdefer allocator.free(self.data);
 		try std.base64.standard.Decoder.decode(self.data, base64EncodedData);
 		if (self.data.len == 0 and self.typ != .none) return error.Invalid;
 
-		const base64EncodedTag = zon.get([]const u8, "authenticationTag", "");
+		const base64EncodedTag = zon.get([]const u8, "authenticationTag") orelse "";
 		self.authenticationTag = allocator.alloc(u8, try std.base64.standard.Decoder.calcSizeForSlice(base64EncodedTag));
 		errdefer allocator.free(self.authenticationTag);
 		try std.base64.standard.Decoder.decode(self.authenticationTag, base64EncodedTag);
 		if (self.authenticationTag.len == 0 and self.typ != .none) return error.Invalid;
 
-		const base64EncodedNonce = zon.get([]const u8, "nonce", "");
+		const base64EncodedNonce = zon.get([]const u8, "nonce") orelse "";
 		self.nonce = allocator.alloc(u8, try std.base64.standard.Decoder.calcSizeForSlice(base64EncodedNonce));
 		errdefer allocator.free(self.nonce);
 		try std.base64.standard.Decoder.decode(self.nonce, base64EncodedNonce);
