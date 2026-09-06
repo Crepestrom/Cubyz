@@ -17,8 +17,8 @@ pub fn satisfied(self: *const And, proceduralItem: *const ProceduralItem, x: i32
 	return true;
 }
 
-pub fn printCheckedGrid(self: *const And, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) struct { [25]main.items.Checked, bool } {
-	var checkedGrid: struct { [25]main.items.Checked, bool } = @splat(.notChecked);
+pub fn printCheckedGrid(self: *const And, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) [25]main.items.Checked {
+	var checkedGrid: [25]main.items.Checked = @splat(.notChecked);
 	for (0..25) |i| {
 		var newTag: main.items.Checked = .notChecked;
 		for (self.children) |child| {

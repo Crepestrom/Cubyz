@@ -21,8 +21,8 @@ pub fn satisfied(self: *const Encased, proceduralItem: *const ProceduralItem, x:
 	return count >= self.amount;
 }
 
-pub fn printCheckedGrid(self: *const Encased, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) struct { [25]main.items.Checked, bool } {
-	var checkedGrid: struct { [25]main.items.Checked, bool } = @splat(.notChecked);
+pub fn printCheckedGrid(self: *const Encased, givenGrid: [25]?main.items.BaseItemIndex, x: i32, y: i32) [25]main.items.Checked {
+	var checkedGrid: [25]main.items.Checked = @splat(.notChecked);
 	for ([_]i32{-1, 0, 1}) |dx| {
 		for ([_]i32{-1, 0, 1}) |dy| {
 			ProceduralItem.getCheckedAt( x + dx, y + dy, givenGrid, self.tag, &checkedGrid);

@@ -9,8 +9,8 @@ pub fn satisfied(_: *const anyopaque, _: *const ProceduralItem, _: i32, _: i32) 
 	return true;
 }
 
-pub fn printCheckedGrid(_: *const anyopaque, _: [25]?main.items.BaseItemIndex, _: i32, _: i32) struct { [25]main.items.Checked, bool } {
-	const checkedGrid: struct { [25]main.items.Checked, bool } = @splat(.validTag);
+pub fn printCheckedGrid(_: *const anyopaque, _: [25]?main.items.BaseItemIndex, _: i32, _: i32) [25]main.items.Checked {
+	const checkedGrid: [25]main.items.Checked = @splat(.validTag);
 	return checkedGrid, false;
 }
 
