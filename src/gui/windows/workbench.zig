@@ -79,14 +79,16 @@ fn updateModifierRestrictionVisuals(hoveredSlotNumber: usize) void {
 			const searchedCheckedGrid = modifier.restriction.printCheckedGrid(slotItems, x, y)[i];
 			switch (searchedCheckedGrid) {
 				.validTag => {newTag = .validTag; break;},
-				.invalidTag => if (newTag == .notChecked) {newTag = .invalidTag; continue;},
+				.invalidTag => if (newTag == .notChecked) {newTag = .invalidTag;},
 				.notChecked => continue,
+				.always => if (newTag != .validTag) {newTag = .always;},
 			}
 		}
 		switch (newTag) {
-			.validTag => itemSlots[i].itemColor = 0xdfffffff,
+			.validTag => itemSlots[i].itemColor = 0xcfddffdd,
 			.invalidTag => itemSlots[i].itemColor = 0xefeebbbb,
 			.notChecked => itemSlots[i].itemColor = 0x33eeeeff,
+			.always => continue,
 		}
 	}
 }

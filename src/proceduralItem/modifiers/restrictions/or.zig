@@ -25,8 +25,9 @@ pub fn printCheckedGrid(self: *const Or, givenGrid: [25]?main.items.BaseItemInde
 			const searchedCheckedGrid = child.printCheckedGrid(givenGrid, x, y)[i];
 			switch (searchedCheckedGrid) {
 				.validTag => {newTag = .validTag; break;},
-				.invalidTag => if (newTag == .notChecked) {newTag = .invalidTag; continue;},
+				.invalidTag => if (newTag == .notChecked) {newTag = .invalidTag;},
 				.notChecked => continue,
+				.always => if (newTag != .validTag) {newTag = .always;},
 			}
 		}
 		checkedGrid[i] = newTag;

@@ -823,6 +823,7 @@ pub const Checked = enum(u8) {
 	notChecked = 0,
 	invalidTag = 1,
 	validTag = 2,
+	always = 3,
 };
 
 pub const ProceduralItem = struct { // MARK: ProceduralItem
