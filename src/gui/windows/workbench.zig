@@ -66,7 +66,7 @@ fn updateModifierRestrictionVisuals(hoveredSlotNumber: usize) void {
 		slot.itemColor = 0xffffffff;
 		slotItems[i] = if (slot.inventory.getItem(i) == .baseItem) slot.inventory.getItem(i).baseItem else null;
 	}
-	
+
 	const hoveredSlot = itemSlots[hoveredSlotNumber];
 	const material = hoveredSlot.inventory.getItem(hoveredSlotNumber).baseItem.material() orelse return;
 	if (material.modifiers.len == 0) return;
