@@ -11,7 +11,7 @@ pub fn satisfied(_: *const anyopaque, _: *const ProceduralItem, _: i32, _: i32) 
 
 pub fn printCheckedGrid(_: *const anyopaque, _: [25]?main.items.BaseItemIndex, _: i32, _: i32) [25]main.items.Checked {
 	const checkedGrid: [25]main.items.Checked = @splat(.validTag);
-	return checkedGrid, false;
+	return checkedGrid;
 }
 
 pub fn loadFromZon(_: NeverFailingAllocator, _: ZonElement) *const anyopaque {
