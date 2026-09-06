@@ -5,11 +5,11 @@ const graphics = main.graphics;
 const Texture = graphics.Texture;
 const Vec2f = main.vec.Vec2f;
 
+const c = @import("c");
+
 const gui = @import("../gui.zig");
 const GuiWindow = gui.GuiWindow;
 const GuiComponent = gui.GuiComponent;
-
-const c = main.graphics.c;
 
 const size: f32 = 64;
 pub var window = GuiWindow{
@@ -38,16 +38,19 @@ pub fn init() void {
 		"assets/cubyz/shaders/graphics/Image.frag",
 		"",
 		&uniforms,
-		.{.cullMode = .none},
-		.{.depthTest = false, .depthWrite = false},
-		.{.attachments = &.{.{
-			.srcColorBlendFactor = .one,
-			.dstColorBlendFactor = .one,
-			.colorBlendOp = .subtract,
-			.srcAlphaBlendFactor = .one,
-			.dstAlphaBlendFactor = .one,
-			.alphaBlendOp = .subtract,
-		}}},
+		graphics.draw.SimpleVertex2D,
+		.{
+			.rasterState = .{.cullMode = .none},
+			.depthStencilState = .{.depthTest = false, .depthWrite = false},
+			.blendState = .{.attachments = &.{.{
+				.srcColorBlendFactor = .one,
+				.dstColorBlendFactor = .one,
+				.colorBlendOp = .subtract,
+				.srcAlphaBlendFactor = .one,
+				.dstAlphaBlendFactor = .one,
+				.alphaBlendOp = .subtract,
+			}}, .formats = &.{.swapChain}},
+		},
 	);
 	texture = Texture.initFromFile("assets/cubyz/ui/hud/crosshair.png");
 }
@@ -59,7 +62,6 @@ pub fn deinit() void {
 
 pub fn render() void {
 	texture.bindTo(0);
-	graphics.draw.setColor(0xffffffff);
 	pipeline.bind(graphics.draw.getScissor());
 	graphics.draw.customShadedImage(&uniforms, .{0, 0}, .{size, size});
 }
