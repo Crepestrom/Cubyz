@@ -37,6 +37,7 @@ pub const sign_editor = @import("sign_editor.zig");
 pub const social = @import("social.zig");
 pub const audio = @import("audio.zig");
 pub const workbench = @import("workbench.zig");
+pub const titlescreen_gibs = @import("titlescreen_gibs.zig");
 
 pub const @"authentication/create_account_account_code" = @import("authentication/create_account_account_code.zig");
 pub const @"authentication/create_account_general_info" = @import("authentication/create_account_general_info.zig");

@@ -56,11 +56,19 @@ fn multiplayer() void {
 		},
 	}
 }
+fn createSeed() void {
+	if (!gui.isWindowOpen("titlescreen_gibs")) {
+		gui.openWindow("titlescreen_gibs");
+	} else {
+		main.gui.windowlist.titlescreen_gibs.createSeed();
+	}
+}
 pub fn onOpen() void {
 	const list = VerticalList.init(.{padding, 16 + padding}, 300, 16);
 	list.add(Button.initText(.{0, 0}, 128, "Singleplayer", .{.onAction = .init(singleplayerSelection)}));
 	list.add(Button.initText(.{0, 0}, 128, "Multiplayer", .{.onAction = .init(multiplayer)}));
 	list.add(Button.initText(.{0, 0}, 128, "Settings", .{.onAction = gui.openWindowCallback("settings")}));
+	list.add(Button.initText(.{0, 0}, 128, "Funny", .{.onAction = .init(createSeed)}));
 	list.add(Button.initText(.{0, 0}, 128, "Touch Grass", .{.onAction = .init(exitGame)}));
 	list.finish(.center);
 	window.rootComponent = list.toComponent();
