@@ -67,7 +67,7 @@ updateFn: *const fn () void = &defaultFunction,
 /// Called every frame for the currently selected window.
 updateSelectedFn: *const fn () void = &defaultFunction,
 /// Called every frame for the currently hovered window.
-updateHoveredFn: *const fn () main.callbacks.Result = &defaultFunctionWithResult,
+updateHoveredFn: *const fn (mousePosition: Vec2f) main.callbacks.Result = &onHoverDefaultFunction,
 
 onOpenFn: *const fn () void = &defaultFunction,
 
@@ -162,6 +162,10 @@ pub fn globalDeinit() void {
 
 pub fn defaultFunction() void {}
 pub fn defaultFunctionWithResult() main.callbacks.Result {
+	return .ignored;
+}
+pub fn onHoverDefaultFunction(mousePosition: Vec2f) main.callbacks.Result {
+	_ = mousePosition;
 	return .ignored;
 }
 
@@ -411,7 +415,7 @@ pub fn updateHovered(self: *GuiWindow, mousePosition: Vec2f) main.callbacks.Resu
 		_ = if (self.titleBar) |titleBar| titleBar.updateHovered(scaledMousePos);
 		return .handled;
 	}
-	if (self.updateHoveredFn() == .handled) return .handled;
+	if (self.updateHoveredFn(scaledMousePos) == .handled) return .handled;
 	if (self.rootComponent) |component| {
 		if (GuiComponent.contains(component.pos(), component.size(), scaledMousePos)) {
 			if (component.updateHovered(scaledMousePos) == .handled) return .handled;

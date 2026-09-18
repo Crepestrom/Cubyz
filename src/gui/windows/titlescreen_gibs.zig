@@ -4,6 +4,7 @@ const main = @import("main");
 const graphics = main.graphics;
 const Texture = graphics.Texture;
 const Vec2f = main.vec.Vec2f;
+const draw = graphics.draw;
 
 const c = @import("c");
 
@@ -33,9 +34,16 @@ const GrassBlade = struct {
 	middleTipConnection: StemRendering,
 	timeAlive: f32,
 };
+const PushField = struct { // circular field that applies a force
+	position: Vec2f,
+	radius: f32,
+	strength: f32,
+	direction: Vec2f, // if vec2f{0, 0} then pushes away from center
+};
 const gravity: Vec2f = Vec2f{0 , 1};
 var seedList: main.ListManaged(Seed) = undefined;
 var grassList: main.ListManaged(GrassBlade) = undefined;
+var pushFieldList: main.ListManaged(PushField) = undefined;
 
 pub var window = GuiWindow{
 	.contentSize = Vec2f{128, 256},
@@ -70,13 +78,27 @@ pub fn onClose() void {
 }
 
 pub fn render() void {
-	const deltaTime = main.lastFrameTime.load(.monotonic)*100.0;
+	const deltaTime: f32 = @floatCast(main.lastFrameTime.load(.monotonic)*100.0);
 	animateObjects(deltaTime);
 
 	texture.bindTo(0);
 	for (seedList.items) |seed| {
-		graphics.draw.image(texture, seed.physics.position, size);
+		draw.image(texture, seed.physics.position, size);
 	}
+	const oldColor = draw.setColor(0xff44ff44);
+	defer draw.restoreColor(oldColor);
+	//const oldScale = draw.setScale(5);
+	//defer draw.restoreScale(oldScale);
+	for (grassList.items) |grassBlade| {
+		const windowOffset = window.size / Vec2f{2, 2};
+		draw.line(grassBlade.basePos.position + windowOffset, grassBlade.baseMiddleConnection.end.position + windowOffset);
+		draw.line(grassBlade.middleTipConnection.start + windowOffset, grassBlade.middleTipConnection.end.position + windowOffset);
+	}
+}
+
+pub fn updateHovered(mousePosition: Vec2f) main.callbacks.Result {
+	_ = mousePosition;
+	return .handled;
 }
 
 pub fn createSeed() void {
@@ -92,20 +114,23 @@ pub fn createSeed() void {
 	seedList.append(newSeed);
 }
 
-fn animateObjects(deltaTime: f64) void {
+fn animateObjects(deltaTime: f32) void {
+	calculatePushFields(deltaTime);
+
 	seedPhysics(deltaTime);
 	grassPhysics(deltaTime);
 }
 
-fn seedPhysics(deltaTime: f64) void {
+fn seedPhysics(deltaTime: f32) void {
 	const seedBounds = size/Vec2f{2, 2};
 	const bounceAbsorption: Vec2f = Vec2f{0.5, 0.5};
+	var listIterator: usize = 0;
 	for (seedList.items) |*seed| {
 		var givenSeedPhysics = &seed.physics;
-		seed.timeAlive += @floatCast(deltaTime);
-		givenSeedPhysics.position += givenSeedPhysics.velocity*Vec2f{@floatCast(deltaTime), @floatCast(deltaTime)};
+		seed.timeAlive += deltaTime;
+		givenSeedPhysics.position += givenSeedPhysics.velocity*Vec2f{deltaTime, deltaTime};
 		const onGround: bool = (givenSeedPhysics.position[1] >= seedBounds[1]);
-		if (!onGround) givenSeedPhysics.velocity += gravity*Vec2f{@floatCast(deltaTime), @floatCast(deltaTime)};
+		if (!onGround) givenSeedPhysics.velocity += gravity*Vec2f{deltaTime, deltaTime};
 		// bounces
 		if (givenSeedPhysics.position[1] > seedBounds[1]) {
 			givenSeedPhysics.position[1] = seedBounds[1];
@@ -114,7 +139,8 @@ fn seedPhysics(deltaTime: f64) void {
 				givenSeedPhysics.velocity[1] = 0;
 			}
 		}
-		if (seed.timeAlive > 5) {
+		const decisecondsUntilGrowth = 100;
+		if (seed.timeAlive > decisecondsUntilGrowth) {
 			const newPhysicsBody = PhysicsBody{
 				.position = givenSeedPhysics.position,
 				.velocity = givenSeedPhysics.velocity,
@@ -134,26 +160,61 @@ fn seedPhysics(deltaTime: f64) void {
 				.timeAlive = 0,
 			};
 			grassList.append(newGrassBlade);
+			_ = seedList.orderedRemove(listIterator);
 		}
+		listIterator += 1;
 	}
 }
 
-fn grassPhysics(deltaTime: f64) void {
+fn grassPhysics(deltaTime: f32) void {
 	for (grassList.items) |*grassBlade| {
-		grassBlade.timeAlive += @floatCast(deltaTime);
+		grassBlade.timeAlive += deltaTime;
 		const baseMiddleConnection: *StemRendering = &grassBlade.baseMiddleConnection;
 		baseMiddleConnection.thickness = 5;
 		baseMiddleConnection.start = grassBlade.basePos.position;
 		baseMiddleConnection.end = PhysicsBody{
-			.position = baseMiddleConnection.start + Vec2f{0, -1},
+			.position = baseMiddleConnection.start + Vec2f{@sin(grassBlade.timeAlive)*10, -50} + baseMiddleConnection.end.velocity,
 			.velocity = baseMiddleConnection.end.velocity,
 		};
 		const middleTipConnection: *StemRendering = &grassBlade.middleTipConnection;
 		middleTipConnection.thickness = 3;
-		middleTipConnection.start = baseMiddleConnection.start;
+		middleTipConnection.start = baseMiddleConnection.end.position;
 		middleTipConnection.end = PhysicsBody{
-			.position = middleTipConnection.start + Vec2f{0, -1},
+			.position = middleTipConnection.start + Vec2f{0, -50} + middleTipConnection.end.velocity,
 			.velocity = middleTipConnection.end.velocity,
 		};
 	}
+}
+
+// MARK: PushFields
+fn calculatePushFields(deltaTime: f32) void {
+	for (pushFieldList.items) |pushField| {
+		const magnitude = distance(Vec2f{0, 0}, pushField.direction);
+		const normalizedDirection = if (magnitude != 0) pushField.direction / Vec2f{magnitude, magnitude} else Vec2f{0, 0};
+
+		pushSeeds(pushField, normalizedDirection, deltaTime);
+	}
+}
+
+fn pushSeeds(pushField: PushField, normalizedDirection: Vec2f, deltaTime: f32) void {
+	for (seedList.items) |*seed| {
+		seed.physics.velocity += calculatePushForce(pushField, seed.physics.position, normalizedDirection, deltaTime);
+	}
+}
+
+fn calculatePushForce(pushField: PushField, targetPos: Vec2f, normalizedDirection: Vec2f, deltaTime: f32) Vec2f {
+	if ((@abs(targetPos[0] - pushField.position[0]) > pushField.radius) or (@abs(targetPos[1] - pushField.position[1]) > pushField.radius)) return Vec2f{0, 0};
+	const objectDistance: f32 = distance(pushField.position, targetPos);
+	const calculatedPushStrength = Vec2f{pushField.strength * deltaTime, pushField.strength * deltaTime};
+	if ((normalizedDirection[0] != 0) or ((normalizedDirection[1] != 0))) {
+		return normalizedDirection * calculatedPushStrength;
+	} else {
+		const magnitude: f32 = objectDistance;
+		const calculatedNormalizedDirection = if (magnitude != 0) pushField.direction / Vec2f{magnitude, magnitude} else Vec2f{0, 0};
+		return calculatedNormalizedDirection * calculatedPushStrength;
+	}
+}
+
+fn distance(pos1: Vec2f, pos2: Vec2f) f32 {
+	return @sqrt((pos1[0] + pos2[0])*(pos1[0] + pos2[0]) + (pos1[1] + pos2[1])*(pos1[1] + pos2[1]));
 }

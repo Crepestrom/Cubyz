@@ -47,7 +47,6 @@ pub const server = struct {
 	pub fn init() void {
 		components = .{};
 	}
-
 	pub fn deinit() void {
 		components.deinit(main.globalAllocator);
 	}
