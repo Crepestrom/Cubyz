@@ -695,7 +695,8 @@ pub const meshes = struct { // MARK: meshes
 		return result;
 	}
 
-	fn readTextureData(index: usize, _path: []const u8) void {
+	fn readTextureData(index: usize, _: []const u8) void {
+		const _path = "assets/cubyz/blocks/textures/cheese.png";
 		const path = _path[0 .. _path.len - ".png".len];
 		const textureInfoPath = extendedPath(main.stackAllocator, path, ".zig.zon");
 		defer main.stackAllocator.free(textureInfoPath);
