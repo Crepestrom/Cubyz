@@ -6,6 +6,40 @@ const Vec3d = vec.Vec3d;
 const Vec3f = vec.Vec3f;
 
 pub const systems = @import("systems/_list.zig");
+const PhaseSortType = enum {
+	before,
+	after,
+};
+pub const Phase = struct {
+	phaseSortType: PhaseSortType,
+};
+
+var phaseTypeList: main.List([]const u8) = .empty;
+var phaseTypeIds: std.StringHashMapUnmanaged(PhaseType) = .{};
+
+pub const PhaseType = enum(u32) {
+	pub fn clearPhaseTypes() void {
+		phaseTypeList = .empty;
+		phaseTypeIds = .{};
+	}
+
+	pub fn get(tag: []const u8) ?PhaseType {
+		return phaseTypeIds.get(tag);
+	}
+
+	pub fn find(tag: []const u8) PhaseType {
+		if (phaseTypeIds.get(tag)) |res| return res;
+		const result: PhaseType = @enumFromInt(phaseTypeList.items.len);
+		const dupedTag = main.worldArena.dupe(u8, tag);
+		phaseTypeList.append(main.worldArena, dupedTag);
+		phaseTypeIds.put(main.worldArena.allocator, dupedTag, result) catch unreachable;
+		return result;
+	}
+
+	pub fn getName(tag: PhaseType) []const u8 {
+		return phaseTypeList.items[@intFromEnum(tag)];
+	}
+};
 
 pub const client = struct {
 	pub fn init() void {
@@ -45,11 +79,6 @@ pub const server = struct {
 	pub fn deinit() void {
 		inline for (@typeInfo(systems).@"struct".decls) |decl| {
 			@field(systems, decl.name).server.deinit();
-		}
-	}
-	pub fn update() void {
-		inline for (@typeInfo(systems).@"struct".decls) |decl| {
-			@field(systems, decl.name).server.update();
 		}
 	}
 };
