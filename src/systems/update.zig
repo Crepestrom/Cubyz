@@ -24,6 +24,7 @@ const ServerWorld = main.server.ServerWorld;
 const items = main.items;
 const ItemStack = items.ItemStack;
 const random = main.random;
+const systems = main.systems;
 
 const c = @import("c");
 
@@ -51,36 +52,9 @@ pub const server = struct {
 	pub fn deinit() void {}
 
 	pub fn update() void {
-		const sortedTypes = sortPhases(@typeInfo(main.systems.systems).@"struct".decls);
+		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decls, "updateEventSubscribe");
 		inline for (sortedTypes) |decl| {
-			if (@hasDecl(@field(main.systems.systems, decl.name).server, "onUpdate")) {
-				@field(main.systems.systems, decl.name).server.onUpdate();
-			} else {
-				continue;
-			}
-		}
-	}
-	
-	fn getPhases(comptime declarations: []const std.builtin.Type.Declaration) []const main.systems.PhaseType {
-		var phaseList: []const main.systems.PhaseType = .{};
-		for (declarations) |decl| {
-			if (@hasDecl(@field(main.systems.systems, decl.name).server, "addUpdatePhase")) {
-				phaseList = std.mem.concat(main.stackAllocator, &.{phaseList, @field(main.systems.systems, decl.name).server.addUpdatePhase()});
-			} else {
-				continue;
-			}
-		}
-		return phaseList;
-	}
-
-	fn sortPhases(comptime declarations: []const std.builtin.Type.Declaration) []const main.systems.PhaseType {
-		var phaseList = getPhases(declarations);
-		for (declarations) |decl| {
-			if (@hasDecl(@field(main.systems.systems, decl.name).server, "addUpdatePhase")) {
-				@field(main.systems.systems, decl.name).server.addUpdatePhase();
-			} else {
-				continue;
-			}
+			@field(systems.systems, decl.name).server.onUpdate();
 		}
 	}
 };
