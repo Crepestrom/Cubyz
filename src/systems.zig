@@ -54,85 +54,83 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 	const PhaseSortType = enum {
 		before,
 		after,
-		start,
 	};
 	pub const Phase = struct {
 		sortDirection: PhaseSortType,
-		sortTargetType: PhaseType,
-		self: PhaseType,
+		targetSortPhase: []const u8,
+		self: []const u8,
 		priority: i32 = 0,
 	};
 	pub const FunctionStep = struct {
-		sortTargetType: PhaseType,
+		targetPhase: []const u8,
 	};
 
-	var phaseTypeList: main.List([]const u8) = .empty;
-	var phaseTypeIds: std.StringHashMapUnmanaged(PhaseType) = .{};
-
-	pub const PhaseType = enum(u32) {
-		pub fn clearPhaseTypes() void {
-			phaseTypeList = .empty;
-			phaseTypeIds = .{};
-		}
-
-		pub fn get(tag: []const u8) ?PhaseType {
-			return phaseTypeIds.get(tag);
-		}
-
-		pub fn find(tag: []const u8) PhaseType {
-			if (phaseTypeIds.get(tag)) |res| return res;
-			const result: PhaseType = @enumFromInt(phaseTypeList.items.len);
-			const dupedTag = main.worldArena.dupe(u8, tag);
-			phaseTypeList.append(main.worldArena, dupedTag);
-			phaseTypeIds.put(main.worldArena.allocator, dupedTag, result) catch unreachable;
-			return result;
-		}
-
-		pub fn getName(tag: PhaseType) []const u8 {
-			return phaseTypeList.items[@intFromEnum(tag)];
-		}
-	};
-
-	pub fn getSortedOrder(comptime declarations: []const std.builtin.Type.Declaration, comptime subscribeFunctionName: []const u8) []const std.builtin.Type.Declaration {
+	pub fn getSortedOrder(comptime declarations: []const std.builtin.Type.Declaration, comptime subscribeFunctionName: []const u8, comptime addPhaseFunctionName: []const u8) []const std.builtin.Type.Declaration {
+		const startingArray: [0][]const u8 = .{};
+		var phaseNameIds: []const[]const u8 = &startingArray;
+		PhaseType.initPhaseTypes(&phaseNameIds);
+		const sortedPhases = sortPhases(declarations, &phaseNameIds, addPhaseFunctionName);
 		const functionSteps = getFunctionSteps(declarations, subscribeFunctionName);
-		const sortedPhases = sortPhases(declarations);
+
 		var sortedFunctionSteps = declarations;
 		var nextFreeSlot: usize = 0;
 		for (sortedPhases) |phase| {
-			AppendCorrectFunctionSteps(declarations, phase, &nextFreeSlot, &sortedFunctionSteps, functionSteps);
+			AppendCorrectFunctionSteps(declarations,
+			phase,
+			&nextFreeSlot,
+			&sortedFunctionSteps,
+			functionSteps,
+			&phaseNameIds
+			);
 		}
 		return sortedFunctionSteps;
 	}
 
-	fn AppendCorrectFunctionSteps(comptime declarations: []const std.builtin.Type.Declaration, comptime targetPhase: Phase, comptime nextFreeSlot: usize, overwrittenArray: []const ?std.builtin.Type.Declaration, comptime functionSteps: []const FunctionStep) void {
+	fn AppendCorrectFunctionSteps(comptime declarations: []const std.builtin.Type.Declaration, comptime targetPhase: Phase, comptime nextFreeSlot: *usize, overwrittenArray: *[]const std.builtin.Type.Declaration, comptime functionSteps: []const FunctionStep, phaseNameIds: *[]const[]const u8) void {
 		for (functionSteps, 0..) |functionStep, i| {
-			if (functionStep.sortTargetType == targetPhase.self) {
+			if (PhaseType.fromFunctionStep(functionStep.targetPhase, phaseNameIds) == (targetPhase.self)) {
 				overwrittenArray[nextFreeSlot] = declarations[i];
 			}
 		}
 	} 
 
 	fn getFunctionSteps(comptime declarations: []const std.builtin.Type.Declaration, comptime subscribeFunctionName: []const u8) []const FunctionStep {
-		var stepList: []const systems.FunctionStep = .{};
+		const startingList: [0]FunctionStep = .{};
+		var stepList: []const FunctionStep = &startingList;
 		for (declarations) |decl| {
-			if (@hasDecl(@field(systems.systems, decl.name).server, subscribeFunctionName)) {
-				stepList = std.mem.concat(main.stackAllocator, &.{stepList, @field(systems.systems, decl.name).server.addUpdatePhase()});
+			if (@hasDecl(@field(systems, decl.name).server, subscribeFunctionName)) {
+				stepList = main.meta.concatComptime(main.stackAllocator, &.{stepList, @field(@field(systems, decl.name).server, subscribeFunctionName)()});
 			} else {
 				continue;
 			}
 		}
+		return stepList;
 	}
-	
-	fn getPhases(comptime declarations: []const std.builtin.Type.Declaration) []const Phase {
-		var phaseList: []const systems.Phase = .{systems.Phase{
-			.sortDirection = .start,
-			.self = systems.PhaseType.find("start"),
-			.sortTargetType = systems.PhaseType.find("start"),
+
+	fn sortPhases(comptime declarations: []const std.builtin.Type.Declaration, phaseNameIds: *[]const[]const u8, comptime addPhaseFunctionName: []const u8) []const Phase {
+		const phaseList = getPhases(declarations, phaseNameIds, addPhaseFunctionName);
+		const ctx: SortContext = .{.phaseNameIds = phaseNameIds.*};
+		std.sort.insertion(Phase, phaseList, ctx, SortContext.lessThan);
+		return phaseList;
+	}
+
+	fn getPhases(comptime declarations: []const std.builtin.Type.Declaration, phaseNameIds: *[]const[]const u8, comptime addPhaseFunctionName: []const u8) []Phase {
+		var startingList: [2]Phase = .{Phase{
+			.sortDirection = .before,
+			.self = "start",
+			.targetSortPhase = "end",
+		},
+		Phase{
+			.sortDirection = .after,
+			.self = "start",
+			.targetSortPhase = "end",
 		}};
-
+		var phaseList: []Phase = &startingList;
 		for (declarations) |decl| {
-			if (@hasDecl(@field(systems.systems, decl.name).server, "addUpdatePhase")) {
-				phaseList = std.mem.concat(main.stackAllocator, &.{phaseList, @field(systems.systems, decl.name).server.addUpdatePhase()});
+			if (@hasDecl(@field(systems, decl.name).server, addPhaseFunctionName)) {
+				const newPhase: Phase = @field(@field(systems, decl.name).server, addPhaseFunctionName)();
+				PhaseType.find(newPhase.self, phaseNameIds);
+				addToPhaseArray(&phaseList, newPhase);
 			} else {
 				continue;
 			}
@@ -140,39 +138,93 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		return phaseList;
 	}
 
-	fn sortPhases(comptime declarations: []const std.builtin.Type.Declaration) []const Phase {
-		var phaseList = getPhases(declarations);
-		std.sort.insertion(usize, &phaseList.items, .{}, lessThan);
-		return phaseList;
+	fn addToPhaseNameArray(phaseArray: *[]const[]const u8, addedPhase: []const u8) void {
+		const extraPhaseArray: [1][]const u8 = .{addedPhase};
+		const translatedPhaseArray: []const[]const u8 = &extraPhaseArray;
+		const newArray = phaseArray.*;
+		const newPhaseArray = newArray ++ translatedPhaseArray;
+		phaseArray.* = newPhaseArray;
 	}
 
-	fn lessThan(ctx: @This(), a: usize, b: usize) bool {
-		return compare(ctx, a, b) orelse {
-			return !compare(ctx, b, a) orelse true;
-		};
+	fn addToPhaseArray(phaseArray: *[]const Phase, addedPhase: Phase) void {
+		const extraPhaseArray: [1]Phase = .{addedPhase};
+		const translatedPhaseArray: []const Phase = &extraPhaseArray;
+		const newArray = phaseArray.*;
+		const newPhaseArray = newArray ++ translatedPhaseArray;
+		phaseArray.* = newPhaseArray;
 	}
+	 
+	pub const SortContext = struct {
+		phaseNameIds: []const[]const u8,
 
-	fn compare(ctx: @This(), a: usize, b: usize) ?bool {
-		const phaseA = ctx.sortlist.items[a];
-		const phaseB = ctx.sortlist.items[b];
-		switch (phaseA.sortDirection) {
-			.start => {},
-			.before => {
-				if (phaseA.sortTargetType == phaseB.self) return true;
-				if (phaseA.sortTargetType == phaseB.sortTargetType) {
-					if (phaseA.priority == phaseB.priority) @compileError("Two Phases cannot sort to the same Target Phase at the same priority");
-					if (phaseA.priority <= phaseB.priority) return true;
-					return false;
-				}
-			},
-			.after => {
-				if (phaseA.sortTargetType == phaseB.self) return false;
-				if (phaseA.sortTargetType == phaseB.sortTargetType) {
-					if (phaseA.priority == phaseB.priority) @compileError("Two Phases cannot sort to the same Target Phase at the same priority");
-					if (phaseA.priority <= phaseB.priority) return false;
-					return true;
-				}
-			},
+		fn lessThan(self: @This(), a: Phase, b: Phase) bool {
+			return compare(self, a, b) orelse {
+				return !compare(self, b, a) orelse true;
+			};
 		}
-	}
+
+		fn compare(self: @This(), phaseA: Phase, phaseB: Phase) ?bool {
+			switch (phaseA.sortDirection) {
+				.before => {
+					const phaseAtargetSortPhase = PhaseType.fromTargetSortPhase(phaseA.targetSortPhase, self.phaseNameIds);
+					if (phaseAtargetSortPhase == PhaseType.fromSelfSortPhase(phaseB.self, self.phaseNameIds)) return true;
+					if (phaseAtargetSortPhase == PhaseType.fromTargetSortPhase(phaseB.targetSortPhase, self.phaseNameIds)) {
+						if (phaseB.sortDirection == .after) return false;
+						if (phaseA.priority == phaseB.priority) @compileError("Two Phases cannot sort to the same Target Phase at the same priority");
+						if (phaseA.priority <= phaseB.priority) return true;
+						return false;
+					}
+				},
+				.after => {
+					const phaseAtargetSortPhase = PhaseType.fromTargetSortPhase(phaseA.targetSortPhase, self.phaseNameIds);
+					if (phaseAtargetSortPhase == PhaseType.fromSelfSortPhase(phaseB.self, self.phaseNameIds)) return false;
+					if (phaseAtargetSortPhase == PhaseType.fromTargetSortPhase(phaseB.targetSortPhase, self.phaseNameIds)) {
+						if (phaseB.sortDirection == .before) return false;
+						if (phaseA.priority == phaseB.priority) @compileError("Two Phases cannot sort to the same Target Phase at the same priority");
+						if (phaseA.priority <= phaseB.priority) return false;
+						return true;
+					}
+				},
+			}
+			return null;
+		}
+	};
+
+	const PhaseType = enum(u32) {
+		start = 0,
+		end = 1,
+		_,
+
+		pub fn initPhaseTypes(phaseNameIds: *[]const[]const u8) void {
+			inline for (comptime std.meta.fieldNames(PhaseType)) |tag| {
+				std.debug.assert(PhaseType.findFromName(tag, phaseNameIds) == @field(PhaseType, tag));
+			}
+		}
+
+		pub fn findFromName(comptime tag: []const u8, phaseNameIds: *[]const[]const u8) PhaseType {
+			if (get(tag, phaseNameIds.*)) |res| return res;
+			const result: PhaseType = @enumFromInt(phaseNameIds.len);
+			addToPhaseNameArray(phaseNameIds, tag);
+			return result;
+		}
+
+		pub fn fromFunctionStep(comptime tag: []const u8, phaseNameIds: *[]const[]const u8) PhaseType {
+			return get(tag, phaseNameIds.*) orelse @compileError("FunctionStep tried to initalize a missing Phase '" ++ tag ++ "'. did you forget to add it?");
+		}
+
+		pub fn fromSelfSortPhase(comptime tag: []const u8, phaseNameIds: []const[]const u8) PhaseType {
+			return get(tag, phaseNameIds) orelse @compileError("how the hell did you make this happen '" ++ tag ++ "'. i am confused");
+		}
+
+		pub fn fromTargetSortPhase(comptime tag: []const u8, phaseNameIds: []const[]const u8) PhaseType {
+			return get(tag, phaseNameIds) orelse @compileError("Phase tried to sort with a nonexistant Phase '" ++ tag ++ "'. did you forget to add it?");
+		}
+
+		pub fn get(comptime tag: []const u8, phaseNameIds: []const[]const u8) ?PhaseType {
+			for (phaseNameIds, 0..) |name, i| {
+				if (std.mem.eql(u8, name, tag)) return @enumFromInt(i);
+			}
+			return null;
+		}
+	};
 };

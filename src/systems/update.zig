@@ -52,9 +52,16 @@ pub const server = struct {
 	pub fn deinit() void {}
 
 	pub fn update() void {
-		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decls, "updateEventSubscribe");
+		const onEventFunctionName: []const u8 = "OnUpdate";
+		const subscribeFunctionName: []const u8 = "updateEventSubscribe";
+		const addPhaseFunctionName: []const u8 = "updateEventAddPhase";
+		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decls, subscribeFunctionName, addPhaseFunctionName);
 		inline for (sortedTypes) |decl| {
-			@field(systems.systems, decl.name).server.onUpdate();
+			if (@hasDecl(@field(systems.systems, decl.name).server, onEventFunctionName)) {
+				@field(@field(systems.systems, decl.name).server, onEventFunctionName)();
+			} else {
+				continue;
+			}
 		}
 	}
 };
