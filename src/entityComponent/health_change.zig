@@ -34,8 +34,9 @@ pub const entityComponentVersion = 0;
 // ############################# Client only stuff ################################
 pub const client = struct {
 	const Component = struct {
-		health: f32,
-		maxHealth: f32,
+		change: f32,
+		damageType: main.game.DamageType,
+		tags: []const main.Tag,
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
 
@@ -67,24 +68,37 @@ pub const client = struct {
 		}
 
 		ptr.* = Component{
-			.health = reader.readFloat(f32) catch return error.UnreadableComponentData,
-			.maxHealth = reader.readFloat(f32) catch return error.UnreadableComponentData,
+			.change = reader.readFloat(f32) catch return error.UnreadableComponentData,
+			.damageType = reader.readEnum(main.game.DamageType) catch return error.UnreadableComponentData,
+			.tags = blk: {
+				const size = reader.readInt(u32) catch return error.UnreadableComponentData;
+				var tags: []main.Tag = main.worldArena.alloc(main.Tag, size);
+				for (0..size) |i| {
+					tags[i] = reader.readEnum(main.Tag) catch return error.UnreadableComponentData;
+				}
+				break :blk tags;
+			}
 		};
 	}
 	pub fn unload(entity: Entity) void {
-		_ = entity;
+		components.remove(entity) catch {};
 	}
 };
 
 // ############################# Server only stuff ################################
 pub const server = struct {
 	pub const Component = struct {
-		health: f32,
-		maxHealth: f32,
+		change: f32,
+		damageType: main.game.DamageType,
+		tags: []const main.Tag,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
-			writer.writeFloat(f32, self.health);
-			writer.writeFloat(f32, self.maxHealth);
+			writer.writeFloat(f32, self.change);
+			writer.writeEnum(main.game.DamageType, self.damageType);
+			writer.writeInt(u32, @intCast(self.tags.len));
+			for (self.tags) |tag| {
+				writer.writeEnum(main.Tag, tag);
+			}
 			return .save;
 		}
 	};
@@ -107,21 +121,19 @@ pub const server = struct {
 		return (components.get(entity) orelse return null).maxHealth;
 	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
-		if (version != entityComponentVersion) return error.InvalidComponentVersion;
-		const ptr: *Component = components.add(main.globalAllocator, entity);
-		ptr.* = Component{
-			.health = reader.readFloat(f32) catch return error.UnreadableComponentData,
-			.maxHealth = reader.readFloat(f32) catch return error.UnreadableComponentData,
-		};
+		_ = entity;
+		_ = reader;
+		_ = version;
 	}
-	pub fn loadFromNumber(entity: Entity, number: f32) void {
+	pub fn loadFromValues(entity: Entity, number: f32, damageType: main.game.DamageType, tags: []const main.Tag) void {
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.health = number,
-			.maxHealth = number,
+			.change = number,
+			.damageType = damageType,
+			.tags = tags,
 		};
 	}
 	pub fn unload(entity: Entity) void {
-		_ = entity;
+		components.remove(entity) catch {};
 	}
 };

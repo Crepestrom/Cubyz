@@ -47,24 +47,15 @@ pub const client = struct {
 		_ = ambientLight;
 		_ = playerPos;
 	}
-
-	pub fn getPredictedHealth(givenEntity: Entity) ?f32 {
-		main.sync.threadContext.assertCorrectContext(.client);
-		const healthComponent = main.entity.components.@"cubyz:health".client.components.get(givenEntity) orelse return null;
-		return healthComponent.health;
-	}
-	pub fn getPredictedMaxHealth(givenEntity: Entity) ?f32 {
-		main.sync.threadContext.assertCorrectContext(.client);
-		const healthComponent = main.entity.components.@"cubyz:health".client.components.get(givenEntity) orelse return null;
-		return healthComponent.maxHealth;
-	}
 };
 // ############################# Server only stuff ################################
 pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
 
-	pub fn addHealth() void {
+	pub fn addHealth(givenEntity: Entity, change: f32, cause: main.game.DamageType) bool {
+		const startingTags: [0]main.Tag = .{};
+		main.entity.components.@"cubyz:health_change".server.loadFromValues(givenEntity, change, cause, &startingTags);
 		const onEventFunctionName: []const u8 = "onAddHealth";
 		const subscribeFunctionName: []const u8 = "addHealthEventSubscribe";
 		const addPhaseFunctionName: []const u8 = "addHealthEventAddPhase";
@@ -76,6 +67,8 @@ pub const server = struct {
 				continue;
 			}
 		}
+		main.entity.components.@"cubyz:health_change".server.unload(givenEntity);
+		return ((main.entity.components.@"cubyz:health".server.get(givenEntity) orelse return false).health == 0);
 	}
 
 	pub fn addHealthEventSubscribe() systems.RunOrderManager.FunctionStep {
@@ -83,34 +76,8 @@ pub const server = struct {
 	}
 
 	pub fn onAddHealth() void {
-		for (entity.components.@"cubyz:health_change".client.components.dense.items, entity.components.@"cubyz:health_change".client.components.denseToSparseIndex.items) |component, id| {
-		
+		for (entity.components.@"cubyz:health_change".server.components.dense.items, entity.components.@"cubyz:health_change".server.components.denseToSparseIndex.items) |component, id| {
+			main.entity.components.@"cubyz:health".server.addHealth(id, component.change);
 		}
-	}
-	pub fn actuallyChangeHealth(givenEntity: Entity, change: f32, cause: main.game.DamageType) bool {
-		main.sync.threadContext.assertCorrectContext(.server);
-		_ = cause;
-		const healthComponent = main.entity.components.@"cubyz:health".server.components.get(givenEntity) orelse return false;
-		healthComponent.health = std.math.clamp(healthComponent.health + change, 0, healthComponent.maxHealth);
-		main.entity.server.transmitChange(main.entity.components.@"cubyz:health", givenEntity);
-		var ifKilled = false;
-		if (healthComponent.health == 0) ifKilled = true;
-		return ifKilled;
-	}
-	pub fn setHealth(givenEntity: Entity, value: f32) void {
-		main.sync.threadContext.assertCorrectContext(.server);
-		const healthComponent = main.entity.components.@"cubyz:health".server.components.get(givenEntity) orelse return;
-		healthComponent.health = std.math.clamp(value, 0, healthComponent.maxHealth);
-		main.entity.server.transmitChange(main.entity.components.@"cubyz:health", givenEntity);
-	}
-	pub fn getHealth(givenEntity: Entity) ?f32 {
-		main.sync.threadContext.assertCorrectContext(.server);
-		const healthComponent = main.entity.components.@"cubyz:health".server.components.get(givenEntity) orelse return null;
-		return healthComponent.health;
-	}
-	pub fn getMaxHealth(givenEntity: Entity) ?f32 {
-		main.sync.threadContext.assertCorrectContext(.server);
-		const healthComponent = main.entity.components.@"cubyz:health".server.components.get(givenEntity) orelse return null;
-		return healthComponent.maxHealth;
 	}
 };

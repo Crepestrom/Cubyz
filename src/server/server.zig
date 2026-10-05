@@ -305,6 +305,9 @@ pub const User = struct { // MARK: User
 				main.entity.components.@"cubyz:model".server.put(self.id, .{.entityModel = defaultModel});
 			}
 		}
+		if (main.entity.components.@"cubyz:health".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:health".server.loadFromNumber(self.id, 8);
+		}
 		if (main.entity.components.@"cubyz:bag".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:bag".server.loadEmpty(self.id);
 		}

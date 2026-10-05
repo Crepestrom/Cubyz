@@ -88,7 +88,7 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 
 	fn AppendCorrectFunctionSteps(comptime declarations: []const std.builtin.Type.Declaration, comptime targetPhase: Phase, comptime nextFreeSlot: *usize, overwrittenArray: *[]const std.builtin.Type.Declaration, comptime functionSteps: []const FunctionStep, phaseNameIds: *[]const[]const u8) void {
 		for (functionSteps, 0..) |functionStep, i| {
-			if (PhaseType.fromFunctionStep(functionStep.targetPhase, phaseNameIds) == (targetPhase.self)) {
+			if (PhaseType.fromFunctionStep(functionStep.targetPhase, phaseNameIds) == PhaseType.fromFunctionStep(targetPhase.self, phaseNameIds)) {
 				overwrittenArray[nextFreeSlot] = declarations[i];
 			}
 		}
@@ -99,7 +99,7 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		var stepList: []const FunctionStep = &startingList;
 		for (declarations) |decl| {
 			if (@hasDecl(@field(systems, decl.name).server, subscribeFunctionName)) {
-				stepList = main.meta.concatComptime(main.stackAllocator, &.{stepList, @field(@field(systems, decl.name).server, subscribeFunctionName)()});
+				addToStepArray(&stepList, @field(@field(systems, decl.name).server, subscribeFunctionName)());
 			} else {
 				continue;
 			}
@@ -152,6 +152,14 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		const newArray = phaseArray.*;
 		const newPhaseArray = newArray ++ translatedPhaseArray;
 		phaseArray.* = newPhaseArray;
+	}
+
+	fn addToStepArray(stepArray: *[]const FunctionStep, addedStep: FunctionStep) void {
+		const extraStepArray: [1]FunctionStep = .{addedStep};
+		const translatedStepArray: []const FunctionStep = &extraStepArray;
+		const newArray = stepArray.*;
+		const newStepArray = newArray ++ translatedStepArray;
+		stepArray.* = newStepArray;
 	}
 	 
 	pub const SortContext = struct {

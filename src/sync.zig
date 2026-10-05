@@ -21,6 +21,7 @@ const ZonElement = main.ZonElement;
 const BlockDrop = main.server.BlockDrop;
 
 const @"cubyz:bag" = main.entity.components.@"cubyz:bag";
+const @"cubyz:health" = main.entity.components.@"cubyz:health";
 
 pub const Side = enum { client, server };
 
@@ -454,7 +455,7 @@ pub const Command = struct { // MARK: Command
 					durability.inv.inv.update();
 				},
 				.health => |health| {
-					main.game.Player.super.health = std.math.clamp(main.game.Player.super.health + health.health, 0, main.game.Player.super.maxHealth);
+					@"cubyz:health".client.changePredictedHealth(main.game.Player.id, health.health);
 				},
 				.kill => |kill| {
 					main.game.Player.kill(kill.spawnPoint);
@@ -682,7 +683,7 @@ pub const Command = struct { // MARK: Command
 					info.source.inv.update();
 				},
 				.addHealth => |info| {
-					main.game.Player.super.health = info.previous;
+					@"cubyz:health".client.setPredictedHealth(main.game.Player.id, info.previous);
 				},
 				.addEnergy => |info| {
 					main.game.Player.super.energy = info.previous;
@@ -846,27 +847,20 @@ pub const Command = struct { // MARK: Command
 			},
 			.addHealth => |*info| {
 				if (side == .server) {
-					info.previous = info.target.?.player().health;
+					info.previous = @"cubyz:health".server.getHealth(info.target.?.player().id) orelse return;
 
-					info.target.?.player().health = std.math.clamp(info.target.?.player().health + info.health, 0, info.target.?.player().maxHealth);
-
-					if (info.target.?.player().health <= 0) {
-						info.target.?.player().health = info.target.?.player().maxHealth;
+					const isKilled = main.systems.systems.health.server.addHealth(info.target.?.player().id, info.health, info.cause);
+					if (isKilled) {
+						main.entity.components.@"cubyz:health".server.resetHealth(info.target.?.player().id);
 						info.cause.sendMessage(info.target.?.name);
-
 						self.syncOperations.append(allocator, .{.kill = .{
 							.target = info.target.?,
 							.spawnPoint = info.target.?.getSpawnPos(),
 						}});
-					} else {
-						self.syncOperations.append(allocator, .{.health = .{
-							.target = info.target.?,
-							.health = info.health,
-						}});
 					}
 				} else {
-					info.previous = main.game.Player.super.health;
-					main.game.Player.super.health = std.math.clamp(main.game.Player.super.health + info.health, 0, main.game.Player.super.maxHealth);
+					info.previous = @"cubyz:health".client.getPredictedHealth(main.game.Player.id) orelse return;
+					@"cubyz:health".client.changePredictedHealth(main.game.Player.id, info.health);
 				}
 			},
 			.addEnergy => |*info| {
@@ -1725,7 +1719,7 @@ pub const Command = struct { // MARK: Command
 				.target = target,
 				.health = self.health,
 				.cause = self.cause,
-				.previous = if (ctx.side == .server) target.?.player().health else main.game.Player.super.health,
+				.previous = if (ctx.side == .server) (@"cubyz:health".server.getHealth(target.?.player().id) orelse return) else (@"cubyz:health".client.getPredictedHealth(main.game.Player.id) orelse return),
 			}});
 		}
 

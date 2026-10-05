@@ -12,6 +12,8 @@ const GuiComponent = gui.GuiComponent;
 
 const hotbar = @import("hotbar.zig");
 
+const @"cubyz:health" = main.entity.components.@"cubyz:health";
+
 pub var window = GuiWindow{
 	.scale = 0.5,
 	.relativePosition = .{
@@ -45,11 +47,11 @@ pub fn deinit() void {
 pub fn render() void {
 	if (main.game.Player.isCreative()) return;
 
-	const displayHealth = @max(0, main.game.Player.super.health);
+	const displayHealth = @max(0, @"cubyz:health".client.getPredictedHealth(main.game.Player.id) orelse 0.0);
 	const halfHeartUnits: usize = @ceil(displayHealth*2);
 	const wholeHearts = halfHeartUnits/2;
 	const halfHeart = halfHeartUnits%2;
-	const totalHearts: usize = @ceil(main.game.Player.super.maxHealth);
+	const totalHearts: usize = @ceil(@as(f32, @"cubyz:health".client.getPredictedMaxHealth(main.game.Player.id) orelse 0.0));
 
 	var x: f32 = 0;
 	var y: f32 = 0;
