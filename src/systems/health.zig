@@ -51,10 +51,10 @@ pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
 
-	pub fn update() void {
-		const onEventFunctionName: []const u8 = "onUpdate";
-		const subscribeFunctionName: []const u8 = "updateEventSubscribe";
-		const addPhaseFunctionName: []const u8 = "updateEventAddPhase";
+	pub fn addHealth() void {
+		const onEventFunctionName: []const u8 = "onAddHealth";
+		const subscribeFunctionName: []const u8 = "addHealthEventSubscribe";
+		const addPhaseFunctionName: []const u8 = "addHealthEventAddPhase";
 		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decls, subscribeFunctionName, addPhaseFunctionName);
 		inline for (sortedTypes) |decl| {
 			if (@hasDecl(@field(systems.systems, decl.name).server, onEventFunctionName)) {
@@ -63,5 +63,13 @@ pub const server = struct {
 				continue;
 			}
 		}
+	}
+
+	pub fn addHealthEventSubscribe() systems.RunOrderManager.FunctionStep {
+		return systems.RunOrderManager.FunctionStep{.targetPhase = "end"};
+	}
+
+	pub fn onAddHealth() void {
+		
 	}
 };
