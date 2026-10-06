@@ -11,8 +11,6 @@ pos: Vec3d = .{0, 0, 0},
 vel: Vec3d = .{0, 0, 0},
 rot: Vec3f = .{0, 0, 0},
 
-energy: f32 = 8,
-maxEnergy: f32 = 8,
 name: ?[]const u8 = null,
 id: main.entity.Entity = .noValue,
 

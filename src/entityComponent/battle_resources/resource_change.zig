@@ -35,7 +35,6 @@ pub const entityComponentVersion = 0;
 pub const client = struct {
 	const Component = struct {
 		change: f32,
-		damageType: main.game.DamageType,
 		tags: []const main.Tag,
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
@@ -108,7 +107,12 @@ pub const server = struct {
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
 	}
-
+	pub fn getHealth(entity: Entity) ?f32 {
+		return (components.get(entity) orelse return null).health;
+	}
+	pub fn getMaxHealth(entity: Entity) ?f32 {
+		return (components.get(entity) orelse return null).maxHealth;
+	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		_ = entity;
 		_ = reader;

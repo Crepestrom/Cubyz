@@ -22,6 +22,10 @@ const BlockDrop = main.server.BlockDrop;
 
 const @"cubyz:bag" = main.entity.components.@"cubyz:bag";
 const @"cubyz:health" = main.entity.components.@"cubyz:health";
+const @"cubyz:energy" = main.entity.components.@"cubyz:energy";
+const @"cubyz:momentum" = main.entity.components.@"cubyz:momentum";
+const @"cubyz:ammo" = main.entity.components.@"cubyz:ammo";
+const @"cubyz:mana_charge" = main.entity.components.@"cubyz:mana_charge";
 
 pub const Side = enum { client, server };
 
@@ -461,7 +465,7 @@ pub const Command = struct { // MARK: Command
 					main.game.Player.kill(kill.spawnPoint);
 				},
 				.energy => |energy| {
-					main.game.Player.super.energy = std.math.clamp(main.game.Player.super.energy + energy.energy, 0, main.game.Player.super.maxEnergy);
+					@"cubyz:energy".client.changePredictedEnergy(main.game.Player.id, energy.energy);
 				},
 				.rotation => |rotation| {
 					main.game.camera.rotation = rotation.rotation;
@@ -686,7 +690,7 @@ pub const Command = struct { // MARK: Command
 					@"cubyz:health".client.setPredictedHealth(main.game.Player.id, info.previous);
 				},
 				.addEnergy => |info| {
-					main.game.Player.super.energy = info.previous;
+					@"cubyz:energy".client.setPredictedEnergy(main.game.Player.id, info.previous);
 				},
 			}
 		}
@@ -865,16 +869,11 @@ pub const Command = struct { // MARK: Command
 			},
 			.addEnergy => |*info| {
 				if (side == .server) {
-					info.previous = info.target.?.player().energy;
-
-					info.target.?.player().energy = std.math.clamp(info.target.?.player().energy + info.energy, 0, info.target.?.player().maxEnergy);
-					self.syncOperations.append(allocator, .{.energy = .{
-						.target = info.target.?,
-						.energy = info.energy,
-					}});
+					info.previous = @"cubyz:energy".server.getEnergy(info.target.?.player().id) orelse return;
+					@"cubyz:energy".server.addEnergy(info.target.?.player().id, info.energy, info.cause);
 				} else {
-					info.previous = main.game.Player.super.energy;
-					main.game.Player.super.energy = std.math.clamp(main.game.Player.super.energy + info.energy, 0, main.game.Player.super.maxEnergy);
+					info.previous = @"cubyz:energy".server.getEnergy(main.game.Player.id) orelse return;
+					@"cubyz:energy".client.changePredictedEnergy(info.target.?.player().id, info.energy);
 				}
 			},
 		}
