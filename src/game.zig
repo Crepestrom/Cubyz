@@ -27,6 +27,8 @@ const Block = main.blocks.Block;
 const physics = main.physics;
 const KeyBoard = main.KeyBoard;
 
+const @"cubyz:health" = main.entity.components.@"cubyz:health";
+
 pub const camera = struct { // MARK: camera
 	pub var rotation: Vec3f = Vec3f{0, 0, 0};
 	pub var direction: Vec3f = Vec3f{0, 0, 0};
@@ -203,6 +205,8 @@ pub const Player = struct { // MARK: Player
 	pub fn kill(spawnPos: Vec3d) void {
 		Player.super.pos = spawnPos;
 		Player.super.vel = .{0, 0, 0};
+
+		@"cubyz:health".client.resetPredictedHealth(Player.id);
 
 		Player.eye = .{};
 		Player.jumpCoyote = 0;

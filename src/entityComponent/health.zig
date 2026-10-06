@@ -65,10 +65,9 @@ pub const client = struct {
 		} else {
 			ptr = components.add(main.globalAllocator, entity);
 		}
-		const currentHealth = reader.readFloat(f32) catch return error.UnreadableComponentData;
 
 		ptr.* = Component{
-			.health = currentHealth,
+			.health = reader.readFloat(f32) catch return error.UnreadableComponentData,
 			.maxHealth = reader.readFloat(f32) catch return error.UnreadableComponentData,
 		};
 	}
@@ -78,14 +77,21 @@ pub const client = struct {
 
 	pub fn changePredictedHealth(givenEntity: Entity, change: f32) void {
 		main.sync.threadContext.assertCorrectContext(.client);
-		const healthComponent = main.entity.components.@"cubyz:health".client.components.get(givenEntity) orelse return;
+		const healthComponent = components.get(givenEntity) orelse return;
 		healthComponent.health = std.math.clamp(healthComponent.health + change, 0, healthComponent.maxHealth);
 
 	}
 	pub fn setPredictedHealth(givenEntity: Entity, value: f32) void {
 		main.sync.threadContext.assertCorrectContext(.client);
-		const healthComponent = main.entity.components.@"cubyz:health".client.components.get(givenEntity) orelse return;
+		const healthComponent = components.get(givenEntity) orelse return;
 		healthComponent.health = std.math.clamp(value, 0, healthComponent.maxHealth);
+	}
+	pub fn resetPredictedHealth(entity: Entity) void {
+		main.sync.threadContext.assertCorrectContext(.client);
+		const healthComponent = components.get(entity) orelse return;
+		const value = healthComponent.maxHealth;
+		healthComponent.health = std.math.clamp(value, 0, healthComponent.maxHealth);
+		main.entity.server.transmitChange(main.entity.components.@"cubyz:health", entity);
 	}
 };
 
