@@ -19,7 +19,6 @@ pub fn loadFrom(self: *@This(), id: main.entity.Entity, zon: ZonElement, comptim
 	self.pos = zon.get(Vec3d, "position") orelse defaultPos;
 	self.vel = zon.get(Vec3d, "velocity") orelse .{0, 0, 0};
 	self.rot = zon.get(Vec3f, "rotation") orelse .{0, 0, 0};
-	self.energy = zon.get(f32, "energy") orelse self.maxEnergy;
 	if (zon.getChildOrNull("components")) |components| {
 		try main.entity.loadComponentsFromBase64(components.as([]const u8) orelse "", self.id, side);
 	}
@@ -44,7 +43,6 @@ pub fn save(self: *const @This(), allocator: NeverFailingAllocator, audience: ma
 	zon.put("position", self.pos);
 	zon.put("velocity", self.vel);
 	zon.put("rotation", self.rot);
-	zon.put("energy", self.energy);
 	zon.put("id", @intFromEnum(self.id));
 
 	var base64 = main.entity.server.componentsToBase64(allocator, self.id, audience);

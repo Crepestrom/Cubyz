@@ -12,6 +12,8 @@ const GuiComponent = gui.GuiComponent;
 
 const hotbar = @import("hotbar.zig");
 
+const @"cubyz:energy" = main.entity.components.@"cubyz:energy";
+
 pub var window = GuiWindow{
 	.scale = 0.5,
 	.relativePosition = .{
@@ -48,15 +50,17 @@ pub fn render() void {
 	var y: f32 = 0;
 	var x: f32 = 0;
 	var energy: f32 = 0;
-	while (energy < main.game.Player.super.maxEnergy) : (energy += 1) {
+	const playerEnergy = @"cubyz:energy".client.getPredictedEnergy(main.game.Player.id) orelse 0;
+	const playerMaxEnergy = @"cubyz:energy".client.getPredictedMaxEnergy(main.game.Player.id) orelse 0;
+	while (energy < playerMaxEnergy) : (energy += 1) {
 		if (x >= window.contentSize[0]) {
 			x = 0;
 			y += 20;
 		}
 		const texture = blk: {
-			if (energy + 1 <= main.game.Player.super.energy) {
+			if (energy + 1 <= playerEnergy) {
 				break :blk energyTexture;
-			} else if (energy + 0.5 <= main.game.Player.super.energy) {
+			} else if (energy + 0.5 <= playerEnergy) {
 				break :blk halfEnergyTexture;
 			} else {
 				break :blk noEnergyTexture;

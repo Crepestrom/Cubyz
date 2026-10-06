@@ -870,7 +870,7 @@ pub const Command = struct { // MARK: Command
 			.addEnergy => |*info| {
 				if (side == .server) {
 					info.previous = @"cubyz:energy".server.getEnergy(info.target.?.player().id) orelse return;
-					@"cubyz:energy".server.addEnergy(info.target.?.player().id, info.energy, info.cause);
+					main.systems.systems.energy.server.addEnergy(info.target.?.player().id, info.energy);
 				} else {
 					info.previous = @"cubyz:energy".server.getEnergy(main.game.Player.id) orelse return;
 					@"cubyz:energy".client.changePredictedEnergy(info.target.?.player().id, info.energy);

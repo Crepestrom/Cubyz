@@ -76,7 +76,7 @@ pub const server = struct {
 
 	pub fn onAddManaCharge() void {
 		for (entity.components.@"cubyz:resource_change".server.components.dense.items, entity.components.@"cubyz:resource_change".server.components.denseToSparseIndex.items) |component, id| {
-			main.entity.components.@"cubyz:mana_charge".server.addHealth(id, component.change);
+			main.entity.components.@"cubyz:mana_charge".server.addManaCharge(id, component.change);
 		}
 	}
 };

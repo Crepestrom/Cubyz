@@ -76,7 +76,7 @@ pub const server = struct {
 
 	pub fn onAddEnergy() void {
 		for (entity.components.@"cubyz:resource_change".server.components.dense.items, entity.components.@"cubyz:resource_change".server.components.denseToSparseIndex.items) |component, id| {
-			main.entity.components.@"cubyz:energy".server.addHealth(id, component.change);
+			main.entity.components.@"cubyz:energy".server.addEnergy(id, component.change);
 		}
 	}
 };

@@ -62,7 +62,6 @@ pub const client = struct {
 
 		ptr.* = Component{
 			.change = reader.readFloat(f32) catch return error.UnreadableComponentData,
-			.damageType = reader.readEnum(main.game.DamageType) catch return error.UnreadableComponentData,
 			.tags = blk: {
 				const size = reader.readInt(u32) catch return error.UnreadableComponentData;
 				var tags: []main.Tag = main.worldArena.alloc(main.Tag, size);
@@ -82,12 +81,10 @@ pub const client = struct {
 pub const server = struct {
 	pub const Component = struct {
 		change: f32,
-		damageType: main.game.DamageType,
 		tags: []const main.Tag,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
 			writer.writeFloat(f32, self.change);
-			writer.writeEnum(main.game.DamageType, self.damageType);
 			writer.writeInt(u32, @intCast(self.tags.len));
 			for (self.tags) |tag| {
 				writer.writeEnum(main.Tag, tag);
@@ -118,11 +115,10 @@ pub const server = struct {
 		_ = reader;
 		_ = version;
 	}
-	pub fn loadFromValues(entity: Entity, number: f32, damageType: main.game.DamageType, tags: []const main.Tag) void {
+	pub fn loadFromValues(entity: Entity, number: f32, tags: []const main.Tag) void {
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
 			.change = number,
-			.damageType = damageType,
 			.tags = tags,
 		};
 	}

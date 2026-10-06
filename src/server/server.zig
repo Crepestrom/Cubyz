@@ -308,6 +308,18 @@ pub const User = struct { // MARK: User
 		if (main.entity.components.@"cubyz:health".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:health".server.loadFromNumber(self.id, 8);
 		}
+		if (main.entity.components.@"cubyz:energy".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:energy".server.loadFromNumber(self.id, 8);
+		}
+		if (main.entity.components.@"cubyz:momentum".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:momentum".server.loadFromNumber(self.id, 8);
+		}
+		if (main.entity.components.@"cubyz:ammo".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:ammo".server.loadFromNumber(self.id, 5);
+		}
+		if (main.entity.components.@"cubyz:mana_charge".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:mana_charge".server.loadFromNumber(self.id, 8);
+		}
 		if (main.entity.components.@"cubyz:bag".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:bag".server.loadEmpty(self.id);
 		}

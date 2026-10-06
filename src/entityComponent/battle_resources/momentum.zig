@@ -65,10 +65,9 @@ pub const client = struct {
 		} else {
 			ptr = components.add(main.globalAllocator, entity);
 		}
-		const currentMomentum = reader.readFloat(f32) catch return error.UnreadableComponentData;
 
 		ptr.* = Component{
-			.momentum = currentMomentum,
+			.momentum = 0,
 			.maxMomentum = reader.readFloat(f32) catch return error.UnreadableComponentData,
 		};
 	}
@@ -96,7 +95,6 @@ pub const server = struct {
 		maxMomentum: f32,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
-			writer.writeFloat(f32, self.momentum);
 			writer.writeFloat(f32, self.maxMomentum);
 			return .save;
 		}
@@ -123,14 +121,14 @@ pub const server = struct {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.momentum = reader.readFloat(f32) catch return error.UnreadableComponentData,
+			.momentum = 0,
 			.maxMomentum = reader.readFloat(f32) catch return error.UnreadableComponentData,
 		};
 	}
 	pub fn loadFromNumber(entity: Entity, number: f32) void {
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.momentum = number,
+			.momentum = 0,
 			.maxMomentum = number,
 		};
 	}
