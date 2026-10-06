@@ -75,7 +75,7 @@ pub const server = struct {
 	}
 
 	pub fn onAddEnergy() void {
-		for (entity.components.@"cubyz:resource_change".server.components.dense.items, entity.components.@"cubyz:health_change".server.components.denseToSparseIndex.items) |component, id| {
+		for (entity.components.@"cubyz:resource_change".server.components.dense.items, entity.components.@"cubyz:resource_change".server.components.denseToSparseIndex.items) |component, id| {
 			main.entity.components.@"cubyz:ammo".server.addHealth(id, component.change);
 		}
 	}

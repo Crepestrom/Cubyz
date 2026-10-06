@@ -12,3 +12,4 @@ pub const @"cubyz:energy" = @import("battle_resources/energy.zig");
 pub const @"cubyz:momentum" = @import("battle_resources/momentum.zig");
 pub const @"cubyz:ammo" = @import("battle_resources/ammo.zig");
 pub const @"cubyz:mana_charge" = @import("battle_resources/mana_charge.zig");
+pub const @"cubyz:resource_change" = @import("battle_resources/resource_change.zig");
