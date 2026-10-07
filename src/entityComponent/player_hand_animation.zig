@@ -86,7 +86,7 @@ pub const client = struct {
 	}
 
 	pub fn setPredictedAnimation(entity: Entity, attemptedAnimation: animationInfo) void {
-		const animationComponent: Component = components.get(entity) orelse return;
+		const animationComponent = components.get(entity) orelse return;
 		if (animationComponent.overwritable) {
 			animationComponent.animationName = attemptedAnimation.animationName;
 			animationComponent.length = attemptedAnimation.animationLength;
@@ -96,6 +96,8 @@ pub const client = struct {
 	}
 	pub fn setAnimationMatrix(entity: Entity, givenMatrix: Mat4f) void {
 		const animationComponent = components.get(entity) orelse return;
+		std.log.debug("name of animation {}", .{animationComponent.endTime, game.world.?.gameTime.load(.monotonic)});
+		if (animationComponent.endTime < game.world.?.gameTime.load(.monotonic)) animationComponent.animationName = null;
 		if (animationComponent.animationName == null) return;
 		animationComponent.handMatrix = givenMatrix;
 	}

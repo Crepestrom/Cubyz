@@ -199,7 +199,7 @@ pub const Player = struct { // MARK: Player
 			}
 			const item = Player.inventory.getItem(Player.selectedSlot);
 			if (item == .proceduralItem) {
-				_ = (item.proceduralItem.onAltUse orelse return).run(.{ .entity = &Player.id, .useType = .normal});
+				_ = item.proceduralItem.type.onUse().run(.{ .entity = Player.id, .useType = .normal});
 			}
 		}
 

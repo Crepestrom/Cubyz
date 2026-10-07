@@ -791,6 +791,9 @@ pub const ProceduralItemTypeIndex = enum(u16) {
 	pub fn pixelSourcesOverlay(self: ProceduralItemTypeIndex) *const [16][16]u8 {
 		return &proceduralItemTypeList.items[@intFromEnum(self)].pixelSourcesOverlay;
 	}
+	pub fn onUse(self: ProceduralItemTypeIndex) *UseItemCallback {
+		return &proceduralItemTypeList.items[@intFromEnum(self)].onUse;
+	}
 };
 
 pub const ProceduralItemType = struct { // MARK: ProceduralItemType
@@ -800,6 +803,7 @@ pub const ProceduralItemType = struct { // MARK: ProceduralItemType
 	slotInfos: [25]SlotInfo,
 	pixelSources: [16][16]u8,
 	pixelSourcesOverlay: [16][16]u8,
+	onUse: UseItemCallback = undefined,
 };
 
 const ProceduralItemProperty = enum {
@@ -829,7 +833,6 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 	seed: u32,
 	type: ProceduralItemTypeIndex,
 	finishedPropertyEvaluation: bool = false,
-	onUse: ?UseItemCallback = undefined,
 
 	properties: [@typeInfo(ProceduralItemProperty).@"enum".fields.len]f32 = @splat(0),
 
@@ -881,7 +884,6 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 			.inertiaHandle = self.inertiaHandle,
 			.centerOfMass = self.centerOfMass,
 			.inertiaCenterOfMass = self.inertiaCenterOfMass,
-			.onUse = self.onUse,
 		};
 		@memcpy(result.image.imageData, self.image.imageData);
 		return result;
@@ -1525,14 +1527,23 @@ pub fn registerProceduralItem(assetFolder: []const u8, id: []const u8, zon: ZonE
 	loadPixelSources(assetFolder, id, "_overlay", &pixelSourcesOverlay);
 
 	const idDupe = main.worldArena.dupe(u8, id);
-	proceduralItemTypeList.append(main.worldArena, .{
+	var addedProceduralItemType: ProceduralItemType = .{
 		.id = idDupe,
 		.tags = Tag.loadTagsFromZon(main.worldArena, zon.getChild("tags")),
 		.slotInfos = slotInfos,
 		.properties = main.worldArena.dupe(PropertyMatrix, parameterMatrices.items),
 		.pixelSources = pixelSources,
 		.pixelSourcesOverlay = pixelSourcesOverlay,
-	});
+	};
+
+	addedProceduralItemType.onUse = blk: {
+		break :blk UseItemCallback.init(zon.getChildOrNull("onUse") orelse break :blk .noop, .{.proceduralItemType = addedProceduralItemType}) orelse {
+			std.log.err("Failed to load useItem event for procedural item type {s}", .{id});
+			break :blk .noop;
+		};
+	};
+	
+	proceduralItemTypeList.append(main.worldArena, addedProceduralItemType);
 	proceduralItemTypeIdToIndex.put(main.worldArena.allocator, idDupe, @enumFromInt(proceduralItemTypeList.items.len - 1)) catch unreachable;
 
 	std.log.debug("Registered procedural item: '{s}'", .{id});

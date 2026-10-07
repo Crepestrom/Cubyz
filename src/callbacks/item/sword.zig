@@ -15,8 +15,9 @@ pub fn init(_: ZonElement, _: main.callbacks.Creator) ?*@This() {
 
 pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.callbacks.Result {
 	_ = self;
+	std.log.debug("run here", .{});
 	if (main.sync.threadContext == .client) {
-		@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, main.Tag.find("swordSwing"));
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 1000});
 	}
 	return .handled;
 }

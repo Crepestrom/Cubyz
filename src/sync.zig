@@ -1801,16 +1801,17 @@ pub const Command = struct { // MARK: Command
 					.null,
 					.baseItem,
 					.proceduralItem => {
-						_ = item.proceduralItem.onUse.?.run(.{ .entity = &self.target.?.id , .useType = self.useType});
+						_ = item.proceduralItem.type.onUse().run(.{ .entity = target.?.*.id , .useType = self.useType});
 					},
 				}
 			}
 			if (threadContext == .client) {
-				switch (self.source.item) {
+				std.log.debug("run here", .{});
+				switch (item) {
 					.null,
 					.baseItem,
 					.proceduralItem => {
-						_ = item.proceduralItem.onUse.?.run(.{ .entity = &main.game.Player.id , .useType = self.useType});
+						_ = item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id , .useType = self.useType});
 					},
 				}
 			}
