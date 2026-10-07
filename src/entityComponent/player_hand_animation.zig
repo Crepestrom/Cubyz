@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const main = @import("main");
-const animation = main.animation;
 const chunk = main.chunk;
 const Entity = main.entity.Entity;
 const ServerChunk = chunk.ServerChunk;
@@ -33,7 +32,8 @@ pub var entityComponentID: main.entity.EntityComponentId = undefined;
 pub const entityComponentVersion = 0;
 
 pub const animationInfo = struct {
-	playingAnimation: animation.Animation,
+	animationName: main.Tag,
+	animationLength: i64 = 0, // stored in deciseconds
 	overwritable: bool = true,
 	loop: bool = false,
 };
@@ -41,9 +41,10 @@ pub const animationInfo = struct {
 // ############################# Client only stuff ################################
 pub const client = struct {
 	const Component = struct {
-		playingAnimation: ?animation.Animation,
-		currentPos: Vec3d = @splat(0),
-		currentRot: Vec4f = @splat(0),
+		animationName: ?main.Tag,
+		length: i64,
+		endTime: i64,
+		handMatrix: Mat4f,
 		overwritable: bool = true,
 		loop: bool = false,
 	};
@@ -70,8 +71,12 @@ pub const client = struct {
 			ptr = components.add(main.globalAllocator, entity);
 		}
 
+		const hasAnimationName = reader.readBool() catch return error.UnreadableComponentData;
 		ptr.* = Component{
-			.playingAnimation = null,
+			.animationName = if (hasAnimationName) reader.readEnum(main.Tag) catch return error.UnreadableComponentData else null,
+			.length = reader.readInt(i64) catch return error.UnreadableComponentData,
+			.endTime = reader.readInt(i64) catch return error.UnreadableComponentData,
+			.handMatrix = Mat4f.identity(),
 			.overwritable = reader.readBool() catch return error.UnreadableComponentData,
 			.loop = reader.readBool() catch return error.UnreadableComponentData,
 		};
@@ -83,30 +88,32 @@ pub const client = struct {
 	pub fn setPredictedAnimation(entity: Entity, attemptedAnimation: animationInfo) void {
 		const animationComponent = components.get(entity) orelse return;
 		if (animationComponent.overwritable) {
-			animationComponent.playingAnimation = attemptedAnimation.playingAnimation;
+			animationComponent.animationName = attemptedAnimation.animationName;
+			animationComponent.length = attemptedAnimation.animationLength;
+			animationComponent.endTime = attemptedAnimation.animationLength + game.world.?.gameTime.load(.monotonic);
 			animationComponent.overwritable = attemptedAnimation.overwritable;
-			animationComponent.loop = attemptedAnimation.loop;
 		}
 	}
-	pub fn UpdateAnimation(entity: Entity, deltaTime: f64) void {
+	pub fn setAnimationMatrix(entity: Entity, givenMatrix: Mat4f) void {
 		const animationComponent = components.get(entity) orelse return;
-		if (animationComponent.playingAnimation == null) return;
-		animationComponent.playingAnimation.?.update(deltaTime);
+		if (animationComponent.endTime < game.world.?.gameTime.load(.monotonic)) animationComponent.animationName = null;
+		if (animationComponent.animationName == null) return;
+		animationComponent.handMatrix = givenMatrix;
 	}
 	pub fn getPredictedAnimationProgress(entity: Entity) ?f32 {
 		const animationComponent = components.get(entity) orelse return null;
-		if (animationComponent.playingAnimation == null) return null;
+		if (animationComponent.animationName == null) return null;
 		const currentTimePassed = -(game.world.?.gameTime.load(.monotonic) - animationComponent.endTime);
 		return std.math.clamp(@as(f32, @floatFromInt(currentTimePassed))/@as(f32, @floatFromInt(animationComponent.length)), 0, 1);
 	}
 	pub fn getAnimationMatrix(entity: Entity) ?Mat4f {
 		const animationComponent = components.get(entity) orelse return null;
-		if (animationComponent.playingAnimation == null) return null;
+		if (animationComponent.animationName == null) return null;
 		return animationComponent.handMatrix;
 	}
 	pub fn isPlayingAnimation(entity: Entity) ?bool {
 		const animationComponent  = components.get(entity) orelse return null;
-		if (animationComponent.playingAnimation == null) return false;
+		if (animationComponent.animationName == null) return false;
 		return true;
 	}
 };
@@ -114,11 +121,17 @@ pub const client = struct {
 // ############################# Server only stuff ################################
 pub const server = struct {
 	pub const Component = struct {
-		playingAnimation: ?animation.Animation,
+		animationName: ?main.Tag,
+		length: i64,
+		endTime: i64,
 		overwritable: bool = true,
 		loop: bool = false,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
+			writer.writeBool(self.animationName != null);
+			if (self.animationName != null) writer.writeEnum(main.Tag, self.animationName orelse return .discard);
+			writer.writeInt(i64, self.length);
+			writer.writeInt(i64, self.endTime);
 			writer.writeBool(self.overwritable);
 			writer.writeBool(self.loop);
 			return .save;
@@ -144,7 +157,9 @@ pub const server = struct {
 	pub fn loadEmpty(entity: Entity) void {
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.playingAnimation = null,
+			.animationName = null,
+			.length = 0,
+			.endTime = 0,
 		};
 	}
 	pub fn unload(entity: Entity) void {

@@ -40,7 +40,6 @@ pub const Tag = tag.Tag;
 pub const utils = @import("utils.zig");
 pub const vec = @import("vec.zig");
 const zon = @import("zon.zig");
-pub const animation = @import("animation.zig");
 pub const ZonElement = zon.ZonElement;
 
 const file_monitor = utils.file_monitor;

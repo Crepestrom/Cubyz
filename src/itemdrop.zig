@@ -806,9 +806,7 @@ pub const ItemDropRenderer = struct { // MARK: ItemDropRenderer
 			modelMatrix = modelMatrix.mul(Mat4f.rotationX(-rot[0]));
 
 			if (isPlayingCustomAnimation()) {
-				modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
-				modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.currentPos)));
-				modelMatrix = modelMatrix.mul(Mat4f.rotationQuat(vec.Quat{.q = @"cubyz:player_hand_animation".client.get(main.game.Player.id).?.currentRot}));
+				modelMatrix = getCustomAnimation();
 			} else {
 				modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
 				if (!isBlock) {
@@ -830,5 +828,8 @@ pub const ItemDropRenderer = struct { // MARK: ItemDropRenderer
 
 	fn isPlayingCustomAnimation() bool {
 		return @"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false;
+	}
+	fn getCustomAnimation() Mat4f {
+		return @"cubyz:player_hand_animation".client.getAnimationMatrix(main.game.Player.id) orelse Mat4f.identity();
 	}
 };
