@@ -326,6 +326,9 @@ pub const User = struct { // MARK: User
 		if (main.entity.components.@"cubyz:permissions".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:permissions".server.loadEmpty(self.id);
 		}
+		if (main.entity.components.@"cubyz:player_hand_animation".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:player_hand_animation".server.loadEmpty(self.id);
+		}
 		main.entity.components.@"cubyz:permissions".server.addToGroup(self.id, permission.Group.default);
 
 		if (self.isLocal) {

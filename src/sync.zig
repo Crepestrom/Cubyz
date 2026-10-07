@@ -288,6 +288,7 @@ pub const Command = struct { // MARK: Command
 		updateBlock = 9,
 		addHealth = 10,
 		chatCommand = 12,
+		useItem = 19,
 	};
 	pub const Payload = union(PayloadType) {
 		open: Open,
@@ -309,6 +310,7 @@ pub const Command = struct { // MARK: Command
 		updateBlock: UpdateBlock,
 		addHealth: AddHealth,
 		chatCommand: ChatCommand,
+		useItem: UseItem
 	};
 
 	const BaseOperationType = enum(u8) {
@@ -321,6 +323,7 @@ pub const Command = struct { // MARK: Command
 		useDurability = 4,
 		addHealth = 5,
 		addEnergy = 6,
+		useItem = 9,
 	};
 
 	/// The BaseOperation is the primitive operation used by Command. It is responsible for executing the operation as
@@ -375,6 +378,11 @@ pub const Command = struct { // MARK: Command
 			target: ?*main.server.User,
 			energy: f32,
 			previous: f32,
+		},
+		useItem: struct {
+			target: ?*main.server.User,
+			source: InventoryAndSlot,
+			useType: UseType,
 		},
 	};
 
@@ -692,6 +700,9 @@ pub const Command = struct { // MARK: Command
 				.addEnergy => |info| {
 					@"cubyz:energy".client.setPredictedEnergy(main.game.Player.id, info.previous);
 				},
+				.useItem => |info| {
+					_ = info; // ill be honest this could become so open ended that i am not sure how to implement this
+				}
 			}
 		}
 	}
@@ -699,7 +710,7 @@ pub const Command = struct { // MARK: Command
 	fn finalize(self: Command, allocator: NeverFailingAllocator, side: Side, reader: *BinaryReader) !void {
 		for (self.baseOperations.items) |step| {
 			switch (step) {
-				.move, .swap, .create, .moveToBag, .takeFromBag, .addHealth, .addEnergy => {},
+				.move, .swap, .create, .moveToBag, .takeFromBag, .addHealth, .addEnergy, .useItem => {},
 				.delete => |info| {
 					info.item.deinit();
 				},
@@ -874,6 +885,18 @@ pub const Command = struct { // MARK: Command
 				} else {
 					info.previous = @"cubyz:energy".server.getEnergy(main.game.Player.id) orelse return;
 					@"cubyz:energy".client.changePredictedEnergy(info.target.?.player().id, info.energy);
+				}
+			},
+			.useItem => |*info| {
+				if (side == .server) {
+					const source = info.source.ref();
+					switch (source.item) {
+						.null,
+						.baseItem,
+						.proceduralItem => {
+							_ = source.item.proceduralItem.onUse.?.run(.{ .entity = &info.target.?.id , .useType = info.useType});
+						},
+					}
 				}
 			},
 		}
@@ -1763,6 +1786,54 @@ pub const Command = struct { // MARK: Command
 			const len = try reader.readVarInt(usize);
 			return .{
 				.message = main.globalAllocator.dupe(u8, try reader.readSlice(len)),
+			};
+		}
+	};
+
+	pub const UseType = enum(u1) {
+		normal = 0,
+		alt = 1,
+	};
+
+	const UseItem = struct { // MARK: AddHealth
+		target: main.entity.Entity,
+		source: InventoryAndSlot,
+		useType: UseType,
+
+		pub fn run(self: UseItem, ctx: Context) error{serverFailure}!void {
+			var target: ?*main.server.User = null;
+
+			if (ctx.side == .server) {
+				const userList = main.server.getUserList(main.stackAllocator);
+				defer main.stackAllocator.free(userList);
+				for (userList) |user| {
+					if (user.id == self.target) {
+						target = user;
+						break;
+					}
+				}
+
+				if (target == null) return error.serverFailure;
+			}
+
+			ctx.execute(.{.useItem = .{
+				.target = target,
+				.source = self.source,
+				.useType = self.useType,
+			}});
+		}
+
+		fn serialize(self: UseItem, writer: *BinaryWriter) void {
+			writer.writeEnum(main.entity.Entity, self.target);
+			self.source.write(writer);
+			writer.writeEnum(UseType, self.useType);
+		}
+
+		fn deserialize(reader: *BinaryReader, side: Side, user: ?*main.server.User) !UseItem {
+			return .{
+				.target = try reader.readEnum(main.entity.Entity),
+				.source = try InventoryAndSlot.read(reader, side, user),
+				.useType = try reader.readEnum(UseType),
 			};
 		}
 	};

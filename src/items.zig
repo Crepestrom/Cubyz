@@ -23,6 +23,8 @@ const Vec3f = vec.Vec3f;
 const modifierList = @import("proceduralItem/modifiers/_list.zig");
 const modifierRestrictionList = @import("proceduralItem/modifiers/restrictions/_list.zig");
 
+const UseItemCallback = main.callbacks.UseItemCallback;
+
 pub const recipes = @import("items/recipes.zig");
 
 pub const Inventory = @import("Inventory.zig");
@@ -827,6 +829,8 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 	seed: u32,
 	type: ProceduralItemTypeIndex,
 	finishedPropertyEvaluation: bool = false,
+	onUse: ?UseItemCallback = undefined,
+	onAltUse: ?UseItemCallback = undefined,
 
 	properties: [@typeInfo(ProceduralItemProperty).@"enum".fields.len]f32 = @splat(0),
 

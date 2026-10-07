@@ -197,6 +197,10 @@ pub const Player = struct { // MARK: Player
 			if (!mods.shift) {
 				if (onInteract.run(.{.blockPos = blockPos, .block = block, .chunk = mesh.chunk}) == .handled) return;
 			}
+			const item = Player.inventory.getItem(Player.selectedSlot);
+			if (item == .proceduralItem) {
+				_ = (item.proceduralItem.onAltUse orelse return).run(.{ .entity = &Player.id, .useType = .normal});
+			}
 		}
 
 		inventory.placeBlock(selectedSlot);

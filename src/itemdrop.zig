@@ -23,6 +23,7 @@ const Vec3i = vec.Vec3i;
 const BinaryReader = main.utils.BinaryReader;
 const BinaryWriter = main.utils.BinaryWriter;
 const NeverFailingAllocator = main.heap.NeverFailingAllocator;
+const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
 
 const c = @import("c");
 
@@ -803,20 +804,32 @@ pub const ItemDropRenderer = struct { // MARK: ItemDropRenderer
 			var modelMatrix = Mat4f.rotationZ(-rot[2]);
 			modelMatrix = modelMatrix.mul(Mat4f.rotationY(-rot[1]));
 			modelMatrix = modelMatrix.mul(Mat4f.rotationX(-rot[0]));
-			modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
-			if (!isBlock) {
-				if (item == .proceduralItem) {
-					modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
-					modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.25));
-				} else {
-					modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.45));
-				}
+
+			if (isPlayingCustomAnimation()) {
+				modelMatrix = getCustomAnimation();
 			} else {
-				modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.2));
+				modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
+				if (!isBlock) {
+					if (item == .proceduralItem) {
+						modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
+						modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.25));
+					} else {
+						modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.45));
+					}
+				} else {
+					modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.2));
+				}
+				modelMatrix = modelMatrix.mul(Mat4f.scale(@splat(scale)));
+				modelMatrix = modelMatrix.mul(Mat4f.translation(@splat(-0.5)));
 			}
-			modelMatrix = modelMatrix.mul(Mat4f.scale(@splat(scale)));
-			modelMatrix = modelMatrix.mul(Mat4f.translation(@splat(-0.5)));
 			drawItem(vertices, modelMatrix);
 		}
+	}
+
+	fn isPlayingCustomAnimation() bool {
+		return @"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false;
+	}
+	fn getCustomAnimation() Mat4f {
+		return @"cubyz:player_hand_animation".client.getAnimationMatrix(main.game.Player.id) orelse Mat4f.identity();
 	}
 };
