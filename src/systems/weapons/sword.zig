@@ -48,7 +48,7 @@ pub const client = struct {
 		_ = playerPos;
 	}
 	fn animateHandObject() void {
-		if (!@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false) return;
+		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false)) return;
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, Mat4f.identity());
 	}
 };

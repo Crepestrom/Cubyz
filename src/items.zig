@@ -830,7 +830,6 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 	type: ProceduralItemTypeIndex,
 	finishedPropertyEvaluation: bool = false,
 	onUse: ?UseItemCallback = undefined,
-	onAltUse: ?UseItemCallback = undefined,
 
 	properties: [@typeInfo(ProceduralItemProperty).@"enum".fields.len]f32 = @splat(0),
 
@@ -882,6 +881,7 @@ pub const ProceduralItem = struct { // MARK: ProceduralItem
 			.inertiaHandle = self.inertiaHandle,
 			.centerOfMass = self.centerOfMass,
 			.inertiaCenterOfMass = self.inertiaCenterOfMass,
+			.onUse = self.onUse,
 		};
 		@memcpy(result.image.imageData, self.image.imageData);
 		return result;

@@ -323,7 +323,6 @@ pub const Command = struct { // MARK: Command
 		useDurability = 4,
 		addHealth = 5,
 		addEnergy = 6,
-		useItem = 9,
 	};
 
 	/// The BaseOperation is the primitive operation used by Command. It is responsible for executing the operation as
@@ -378,11 +377,6 @@ pub const Command = struct { // MARK: Command
 			target: ?*main.server.User,
 			energy: f32,
 			previous: f32,
-		},
-		useItem: struct {
-			target: ?*main.server.User,
-			source: InventoryAndSlot,
-			useType: UseType,
 		},
 	};
 
@@ -700,9 +694,6 @@ pub const Command = struct { // MARK: Command
 				.addEnergy => |info| {
 					@"cubyz:energy".client.setPredictedEnergy(main.game.Player.id, info.previous);
 				},
-				.useItem => |info| {
-					_ = info; // ill be honest this could become so open ended that i am not sure how to implement this
-				}
 			}
 		}
 	}
@@ -710,7 +701,7 @@ pub const Command = struct { // MARK: Command
 	fn finalize(self: Command, allocator: NeverFailingAllocator, side: Side, reader: *BinaryReader) !void {
 		for (self.baseOperations.items) |step| {
 			switch (step) {
-				.move, .swap, .create, .moveToBag, .takeFromBag, .addHealth, .addEnergy, .useItem => {},
+				.move, .swap, .create, .moveToBag, .takeFromBag, .addHealth, .addEnergy => {},
 				.delete => |info| {
 					info.item.deinit();
 				},
@@ -1804,12 +1795,22 @@ pub const Command = struct { // MARK: Command
 				if (target == null) return error.serverFailure;
 			}
 
+			const item = self.source.inv.getItem(self.source.slot);
 			if (threadContext == .server) {
+				switch (item) {
+					.null,
+					.baseItem,
+					.proceduralItem => {
+						_ = item.proceduralItem.onUse.?.run(.{ .entity = &self.target.?.id , .useType = self.useType});
+					},
+				}
+			}
+			if (threadContext == .client) {
 				switch (self.source.item) {
 					.null,
 					.baseItem,
 					.proceduralItem => {
-						_ = self.source.item.proceduralItem.onUse.?.run(.{ .entity = &self.target.?.id , .useType = self.useType});
+						_ = item.proceduralItem.onUse.?.run(.{ .entity = &main.game.Player.id , .useType = self.useType});
 					},
 				}
 			}
