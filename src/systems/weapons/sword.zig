@@ -27,6 +27,8 @@ const random = main.random;
 
 const c = @import("c");
 
+const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
+
 const entityComponent = main.entityComponent;
 
 // ############################# Client only stuff ################################
@@ -39,10 +41,15 @@ pub const client = struct {
 		_ = ambientLight;
 		_ = playerPos;
 		_ = deltaTime;
+		animateHandObject();
 	}
 	pub fn renderHud(ambientLight: Vec3f, playerPos: Vec3d) void {
 		_ = ambientLight;
 		_ = playerPos;
+	}
+	fn animateHandObject() void {
+		if (!@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false) return;
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, Mat4f.identity());
 	}
 };
 // ############################# Server only stuff ################################

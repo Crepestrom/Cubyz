@@ -887,18 +887,6 @@ pub const Command = struct { // MARK: Command
 					@"cubyz:energy".client.changePredictedEnergy(info.target.?.player().id, info.energy);
 				}
 			},
-			.useItem => |*info| {
-				if (side == .server) {
-					const source = info.source.ref();
-					switch (source.item) {
-						.null,
-						.baseItem,
-						.proceduralItem => {
-							_ = source.item.proceduralItem.onUse.?.run(.{ .entity = &info.target.?.id , .useType = info.useType});
-						},
-					}
-				}
-			},
 		}
 		self.baseOperations.append(allocator, op);
 	}
@@ -1795,7 +1783,7 @@ pub const Command = struct { // MARK: Command
 		alt = 1,
 	};
 
-	const UseItem = struct { // MARK: AddHealth
+	const UseItem = struct { // MARK: UseItem
 		target: main.entity.Entity,
 		source: InventoryAndSlot,
 		useType: UseType,
@@ -1816,11 +1804,15 @@ pub const Command = struct { // MARK: Command
 				if (target == null) return error.serverFailure;
 			}
 
-			ctx.execute(.{.useItem = .{
-				.target = target,
-				.source = self.source,
-				.useType = self.useType,
-			}});
+			if (threadContext == .server) {
+				switch (self.source.item) {
+					.null,
+					.baseItem,
+					.proceduralItem => {
+						_ = self.source.item.proceduralItem.onUse.?.run(.{ .entity = &self.target.?.id , .useType = self.useType});
+					},
+				}
+			}
 		}
 
 		fn serialize(self: UseItem, writer: *BinaryWriter) void {
