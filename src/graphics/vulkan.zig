@@ -485,7 +485,7 @@ fn createLogicalDevice() void {
 pub const Semaphore = struct { // MARK: Semaphore
 	handle: c.VkSemaphore,
 
-	pub fn init() Semaphore {
+	fn init() Semaphore {
 		var result: c.VkSemaphore = undefined;
 		const semaphoreInfo = c.VkSemaphoreCreateInfo{
 			.sType = c.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -493,18 +493,15 @@ pub const Semaphore = struct { // MARK: Semaphore
 		checkResult(c.vkCreateSemaphore(device, &semaphoreInfo, null, &result));
 		return .{.handle = result};
 	}
-	fn privateDeinit(self: Semaphore) void {
+	fn deinit(self: Semaphore) void {
 		c.vkDestroySemaphore(device, self.handle, null);
-	}
-	pub fn deferredDeinit(self: Semaphore) void {
-		gpu_garbage_collection.deferredFree(.{.semaphore = self});
 	}
 };
 
 pub const Fence = struct { // MARK: Fence
 	handle: c.VkFence,
 
-	pub fn init(createSignaled: bool) Fence {
+	fn init(createSignaled: bool) Fence {
 		var result: c.VkFence = undefined;
 		const fenceInfo = c.VkFenceCreateInfo{
 			.sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -513,14 +510,11 @@ pub const Fence = struct { // MARK: Fence
 		checkResult(c.vkCreateFence(device, &fenceInfo, null, &result));
 		return .{.handle = result};
 	}
-	fn privateDeinit(self: Fence) void {
+	fn deinit(self: Fence) void {
 		c.vkDestroyFence(device, self.handle, null);
 	}
-	pub fn deferredDeinit(self: Fence) void {
-		gpu_garbage_collection.deferredFree(.{.fence = self});
-	}
 
-	pub fn waitAndReset(self: Fence) void {
+	fn waitAndReset(self: Fence) void {
 		checkResult(c.vkWaitForFences(device, 1, &self.handle, c.VK_TRUE, c.UINT64_MAX));
 		checkResult(c.vkResetFences(device, 1, &self.handle));
 	}
@@ -538,7 +532,6 @@ const Frame = struct { // MARK: Frame
 
 	uploadCommands: main.graphics.CommandBuffer,
 	guiCommands: main.graphics.CommandBuffer,
-	renderCommands: main.graphics.CommandBuffer,
 	extent: c.VkExtent2D,
 
 	fn init() Frame {
@@ -552,20 +545,18 @@ const Frame = struct { // MARK: Frame
 			.swapChainImageView = undefined,
 			.uploadCommands = .init(),
 			.guiCommands = .init(),
-			.renderCommands = .init(),
 			.extent = undefined,
 		};
 	}
 
 	fn deinit(self: Frame) void {
-		self.fence.privateDeinit();
-		self.uploadFence.privateDeinit();
-		self.imageAvailable.privateDeinit();
-		self.uploadFinished.privateDeinit();
-		self.renderFinished.privateDeinit();
+		self.fence.deinit();
+		self.uploadFence.deinit();
+		self.imageAvailable.deinit();
+		self.uploadFinished.deinit();
+		self.renderFinished.deinit();
 		self.uploadCommands.deinit();
 		self.guiCommands.deinit();
-		self.renderCommands.deinit();
 	}
 
 	fn beginRender(self: Frame) void {
@@ -594,7 +585,6 @@ const Frame = struct { // MARK: Frame
 			},
 			.renderArea = .{.extent = self.extent},
 		});
-		self.renderCommands.beginRecording(0);
 	}
 
 	fn endRender(self: Frame) void {
@@ -605,15 +595,6 @@ const Frame = struct { // MARK: Frame
 			&.{},
 			&.{self.uploadFinished.handle},
 			self.uploadFence.handle,
-		);
-
-		self.renderCommands.endRecording();
-		self.renderCommands.submit(
-			graphicsQueue,
-			&.{self.uploadFinished.handle},
-			&.{c.VK_PIPELINE_STAGE_TRANSFER_BIT},
-			&.{},
-			null,
 		);
 
 		self.guiCommands.endRendering();
@@ -633,8 +614,8 @@ const Frame = struct { // MARK: Frame
 		self.guiCommands.endRecording();
 		self.guiCommands.submit(
 			graphicsQueue,
-			&.{self.imageAvailable.handle},
-			&.{c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+			&.{self.imageAvailable.handle, self.uploadFinished.handle},
+			&.{c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT},
 			&.{self.renderFinished.handle},
 			self.fence.handle,
 		);
@@ -888,7 +869,7 @@ pub const Image = struct { // MARK: Image
 	view: c.VkImageView = undefined,
 	sampler: c.VkSampler = undefined,
 
-	pub const ImageOptions = struct {
+	const ImageOptions = struct {
 		usage: c.VkImageUsageFlags,
 		hostAccessible: bool = false,
 		flags: c.VkImageCreateFlags = 0,
@@ -904,14 +885,13 @@ pub const Image = struct { // MARK: Image
 		addressMode: AddressMode = .repeat,
 		mipLodBias: f32 = 0,
 		maxAnisotropy: ?f32 = null,
-		typ: enum { color, depth } = .color,
 
-		pub const Filter = enum(c.VkFilter) {
+		const Filter = enum(c.VkFilter) {
 			nearest = c.VK_FILTER_NEAREST,
 			linear = c.VK_FILTER_LINEAR,
 		};
 
-		pub const AddressMode = enum(c.VkSamplerAddressMode) {
+		const AddressMode = enum(c.VkSamplerAddressMode) {
 			repeat = c.VK_SAMPLER_ADDRESS_MODE_REPEAT,
 			mirroredRepeat = c.VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
 			clampToEdge = c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -949,10 +929,7 @@ pub const Image = struct { // MARK: Image
 			.image = self.handle,
 			.format = options.format,
 			.subresourceRange = .{
-				.aspectMask = switch (options.typ) {
-					.color => c.VK_IMAGE_ASPECT_COLOR_BIT,
-					.depth => c.VK_IMAGE_ASPECT_DEPTH_BIT,
-				},
+				.aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT,
 				.baseMipLevel = 0,
 				.levelCount = options.mipLevels,
 				.baseArrayLayer = 0,
@@ -1129,7 +1106,7 @@ pub const Image = struct { // MARK: Image
 	}
 };
 
-pub const gpu_allocator = struct { // MARK: gpu_allocator
+pub const gpu_allocator = struct {
 	var handle: c.VmaAllocator = undefined;
 
 	fn init() void {
@@ -1153,12 +1130,10 @@ pub const gpu_allocator = struct { // MARK: gpu_allocator
 	}
 };
 
-pub const gpu_garbage_collection = struct { // MARK: gpu_garbage_collection
+pub const gpu_garbage_collection = struct {
 	const Entry = union(enum) {
 		buf: Buffer,
 		image: Image,
-		semaphore: Semaphore,
-		fence: Fence,
 	};
 	var currentList: usize = 0;
 	var lists: [frames.len + 1]main.List(Entry) = @splat(.empty);
