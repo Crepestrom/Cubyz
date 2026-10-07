@@ -100,11 +100,11 @@ pub const client = struct {
 		if (animationComponent.animationName == null) return;
 		animationComponent.handMatrix = givenMatrix;
 	}
-	pub fn getPredictedAnimationProgress(entity: Entity) f32 {
-		const animationComponent = components.get(entity) orelse return;
-		if (animationComponent.animationName == null) return;
+	pub fn getPredictedAnimationProgress(entity: Entity) ?f32 {
+		const animationComponent = components.get(entity) orelse return null;
+		if (animationComponent.animationName == null) return null;
 		const currentTimePassed = -(game.world.?.gameTime.load(.monotonic) - animationComponent.endTime);
-		return std.math.clamp(currentTimePassed/animationComponent.length, 0, 1);
+		return std.math.clamp(@as(f32, @floatFromInt(currentTimePassed))/@as(f32, @floatFromInt(animationComponent.length)), 0, 1);
 	}
 	pub fn getAnimationMatrix(entity: Entity) ?Mat4f {
 		const animationComponent = components.get(entity) orelse return null;
