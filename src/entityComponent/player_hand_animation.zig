@@ -33,7 +33,7 @@ pub const entityComponentVersion = 0;
 
 pub const animationInfo = struct {
 	animationName: main.Tag,
-	animationLength: i64 = 0, // stored in milliseconds
+	animationLength: i64 = 0, // stored in deciseconds
 	overwritable: bool = true,
 	loop: bool = false,
 };
@@ -96,7 +96,6 @@ pub const client = struct {
 	}
 	pub fn setAnimationMatrix(entity: Entity, givenMatrix: Mat4f) void {
 		const animationComponent = components.get(entity) orelse return;
-		std.log.debug("name of animation {}", .{animationComponent.endTime, game.world.?.gameTime.load(.monotonic)});
 		if (animationComponent.endTime < game.world.?.gameTime.load(.monotonic)) animationComponent.animationName = null;
 		if (animationComponent.animationName == null) return;
 		animationComponent.handMatrix = givenMatrix;

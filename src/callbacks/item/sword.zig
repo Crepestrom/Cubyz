@@ -17,7 +17,7 @@ pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.c
 	_ = self;
 	std.log.debug("run here", .{});
 	if (main.sync.threadContext == .client) {
-		@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 1000});
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
 	}
 	return .handled;
 }
