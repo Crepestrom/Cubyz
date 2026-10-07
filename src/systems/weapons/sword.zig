@@ -40,8 +40,8 @@ pub const client = struct {
 	pub fn render(ambientLight: Vec3f, playerPos: Vec3d, deltaTime: f64) void {
 		_ = ambientLight;
 		_ = playerPos;
-		_ = deltaTime;
-		animateHandObject();
+		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false)) return;
+		@"cubyz:player_hand_animation".client.UpdateAnimation(main.game.Player.id, deltaTime);
 	}
 	pub fn renderHud(ambientLight: Vec3f, playerPos: Vec3d) void {
 		_ = ambientLight;
@@ -51,12 +51,13 @@ pub const client = struct {
 		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false)) return;
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.Player.id) orelse 0;
 		const swingWidth: f32 = 1;
-		const horizontalMovement = (flipProgressSpeed(sampleQuadratic(@max(2*swingProgress - 1, 0))) - @min(sampleQuadratic(2*swingProgress), 1))*swingWidth;
+		const horizontalMovement = ((sampleQuadratic(@max(2*swingProgress - 1, 0))) - @min(sampleQuadratic(2*swingProgress), 1))*swingWidth;
 		const pos = Vec3d{horizontalMovement, 1.0, 0.0};
 		var modelMatrix = Mat4f.identity();
 
 		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.5));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(-std.math.pi*swingProgress + 0.5));
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
 	}
 	fn sampleQuadratic(inputValue: f32) f32 {

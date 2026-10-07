@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const main = @import("main");
+const animation = main.animation;
 const Block = main.blocks.Block;
 const vec = main.vec;
 const Vec3i = vec.Vec3i;
@@ -17,7 +18,10 @@ pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.c
 	_ = self;
 	std.log.debug("run here", .{});
 	if (main.sync.threadContext == .client) {
-		@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
+		animation.loadGltf();
+		const animIndex = animation.animationHashMap.get("swing_axe") orelse 0;
+		const foundAnimation = animation.animationTypes.items[animIndex];
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.playingAnimation = foundAnimation});
 	}
 	return .handled;
 }
