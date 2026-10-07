@@ -187,19 +187,6 @@ pub const Player = struct { // MARK: Player
 		}
 	}
 
-	pub fn placeBlock(mods: main.Window.Key.Modifiers) void {
-		if (main.renderer.MeshSelection.selectedBlockPos) |blockPos| blk: {
-			const mesh = main.renderer.mesh_storage.getMesh(.initFromWorldPos(blockPos, 1)) orelse break :blk;
-			const block = mesh.chunk.getBlock(blockPos[0] - mesh.pos.wx, blockPos[1] - mesh.pos.wy, blockPos[2] - mesh.pos.wz);
-			const onInteract = block.onInteract();
-			if (!mods.shift) {
-				if (onInteract.run(.{.blockPos = blockPos, .block = block, .chunk = mesh.chunk}) == .handled) return;
-			}
-		}
-
-		inventory.placeBlock(selectedSlot);
-	}
-
 	pub fn kill(spawnPos: Vec3d) void {
 		Player.super.pos = spawnPos;
 		Player.super.vel = .{0, 0, 0};
