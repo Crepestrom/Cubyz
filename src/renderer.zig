@@ -1020,6 +1020,10 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 	}
 
 	pub fn placeBlock(inventory: main.items.Inventory.ClientInventory, slot: u32) void {
+		const stack = inventory.getStack(slot);
+		if (stack.item == .proceduralItem) {
+			_ = if (!stack.item.proceduralItem.type.onUse().isNoop()) stack.item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id, .useType = .alt });
+		}
 		if (selectedBlockPos) |selectedPos| {
 			var oldBlock = mesh_storage.getBlockFromRenderThread(selectedPos[0], selectedPos[1], selectedPos[2]) orelse return;
 			var block = oldBlock;
@@ -1089,13 +1093,16 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 			main.entity.components.@"cubyz:swinging".client.put(main.game.Player.id);
 			break :blk main.entity.components.@"cubyz:swinging".client.get(main.game.Player.id).?;
 		};
+		const stack = inventory.getStack(slot);
+		if (stack.item == .proceduralItem) {
+			_ = if (!stack.item.proceduralItem.type.onUse().isNoop()) stack.item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id, .useType = .normal });
+		}
 
 		if (selectedBlockPos) |selectedPos| {
 			const breaking = main.entity.components.@"cubyz:breaking".client.get(main.game.Player.id) orelse blk: {
 				main.entity.components.@"cubyz:breaking".client.put(main.game.Player.id, selectedPos);
 				break :blk main.entity.components.@"cubyz:breaking".client.get(main.game.Player.id).?;
 			};
-			const stack = inventory.getStack(slot);
 			const isSelectionWand = stack.item == .baseItem and std.mem.eql(u8, stack.item.baseItem.id(), "cubyz:selection_wand");
 			if (isSelectionWand) {
 				game.Player.selectionPosition1 = selectedPos;
