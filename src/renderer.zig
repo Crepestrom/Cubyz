@@ -1031,7 +1031,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 	pub fn placeBlock(inventory: main.items.Inventory.ClientInventory, slot: u32) void {
 		const stack = inventory.getStack(slot);
 		if (stack.item == .proceduralItem) {
-			_ = if (!stack.item.proceduralItem.type.onUse().isNoop()) stack.item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id, .useType = .alt });
+			if (!stack.item.proceduralItem.type.onUse().isNoop()) main.sync.client.executeCommand(.{ .useItem = .{ .source = inventory.getInventoryAndSlot(slot), .target = main.game.Player.id, .useType = .alt } });
 		}
 		if (selectedBlockPos) |selectedPos| {
 			var oldBlock = mesh_storage.getBlockFromRenderThread(selectedPos[0], selectedPos[1], selectedPos[2]) orelse return;
@@ -1104,7 +1104,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 		};
 		const stack = inventory.getStack(slot);
 		if (stack.item == .proceduralItem) {
-			_ = if (!stack.item.proceduralItem.type.onUse().isNoop()) stack.item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id, .useType = .normal });
+			if (!stack.item.proceduralItem.type.onUse().isNoop()) main.sync.client.executeCommand(.{ .useItem = .{ .source = inventory.getInventoryAndSlot(slot), .target = main.game.Player.id, .useType = .alt } });
 		}
 
 		if (selectedBlockPos) |selectedPos| {

@@ -92,11 +92,12 @@ pub const server = struct {
 	pub fn deinit() void {}
 	
 	pub fn baseAttack(givenEntity: Entity) void {
-		std.log.debug("ran here", .{});
+		std.log.debug("where is this", .{});
 		systems.systems.selection_box.server.selectInSphere(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage);
 	}
 
 	fn dealDamage(givenEntity: Entity) void {
+		std.log.debug("does this run", .{});
 		main.sync.addHealth(2, .kill, .server, givenEntity);
 	}
 };
