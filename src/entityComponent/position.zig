@@ -66,6 +66,15 @@ pub const client = struct {
 	pub fn unload(entity: Entity) void {
 		_ = entity;
 	}
+
+	pub fn getPosition(entity: Entity) ?Vec3d {
+		const positionComponent = components.get(entity) orelse return null;
+		return positionComponent.position;
+	}
+	pub fn setPosition(entity: Entity, givenPosition: Vec3d) void {
+		const positionComponent = components.get(entity) orelse return;
+		positionComponent.position = givenPosition;
+	}
 };
 
 // ############################# Server only stuff ################################
@@ -94,9 +103,9 @@ pub const server = struct {
 		const positionComponent = components.get(entity) orelse return null;
 		return positionComponent.position;
 	}
-	pub fn getSize(entity: Entity) ?Vec3d {
-		const positionComponent = components.get(entity) orelse return null;
-		return positionComponent.size;
+	pub fn setPosition(entity: Entity, givenPosition: Vec3d) void {
+		const positionComponent = components.get(entity) orelse return;
+		positionComponent.position = givenPosition;
 	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
