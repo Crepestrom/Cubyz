@@ -900,6 +900,13 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 		lineSize: c_int,
 	} = undefined;
 
+	pub const Uniforms = extern struct {
+		modelPosition: [3]f32 align(16),
+		lowerBounds: [3]f32 align(16),
+		upperBounds: [3]f32 align(16),
+		lineSize: f32,
+	};
+
 	pub fn init() void {
 		pipeline = graphics.Pipeline.init(
 			"assets/cubyz/shaders/block_selection_vertex.vert",
@@ -911,6 +918,8 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 				.rasterState = .{.cullMode = .none},
 				.depthStencilState = .{.depthTest = true, .depthWrite = true},
 				.blendState = .{.attachments = &.{.alphaBlending}, .formats = &.{.world}},
+				.inputAssemblyState = .{.topology = .triangleList},
+				.pushConstantSize = @sizeOf(Uniforms),
 			},
 		);
 	}
@@ -1020,6 +1029,10 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 	}
 
 	pub fn placeBlock(inventory: main.items.Inventory.ClientInventory, slot: u32) void {
+		const stack = inventory.getStack(slot);
+		if (stack.item == .proceduralItem) {
+			_ = if (!stack.item.proceduralItem.type.onUse().isNoop()) stack.item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id, .useType = .alt });
+		}
 		if (selectedBlockPos) |selectedPos| {
 			var oldBlock = mesh_storage.getBlockFromRenderThread(selectedPos[0], selectedPos[1], selectedPos[2]) orelse return;
 			var block = oldBlock;
@@ -1089,13 +1102,16 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 			main.entity.components.@"cubyz:swinging".client.put(main.game.Player.id);
 			break :blk main.entity.components.@"cubyz:swinging".client.get(main.game.Player.id).?;
 		};
+		const stack = inventory.getStack(slot);
+		if (stack.item == .proceduralItem) {
+			_ = if (!stack.item.proceduralItem.type.onUse().isNoop()) stack.item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id, .useType = .normal });
+		}
 
 		if (selectedBlockPos) |selectedPos| {
 			const breaking = main.entity.components.@"cubyz:breaking".client.get(main.game.Player.id) orelse blk: {
 				main.entity.components.@"cubyz:breaking".client.put(main.game.Player.id, selectedPos);
 				break :blk main.entity.components.@"cubyz:breaking".client.get(main.game.Player.id).?;
 			};
-			const stack = inventory.getStack(slot);
 			const isSelectionWand = stack.item == .baseItem and std.mem.eql(u8, stack.item.baseItem.id(), "cubyz:selection_wand");
 			if (isSelectionWand) {
 				game.Player.selectionPosition1 = selectedPos;
@@ -1193,20 +1209,37 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 	}
 
 	pub fn drawCube(relativePositionToPlayer: Vec3d, min: Vec3f, max: Vec3f) void {
-		pipeline.bind(null);
+		if (main.settings.launchConfig.vulkanTestingMode) {
+			vulkan.currentFrame.renderCommands.bindPipeline(pipeline, null);
+			vulkan.currentFrame.renderCommands.pushConstants(pipeline, &Uniforms{
+				.modelPosition = .{
+					@floatCast(relativePositionToPlayer[0]),
+					@floatCast(relativePositionToPlayer[1]),
+					@floatCast(relativePositionToPlayer[2]),
+				},
+				.lowerBounds = .{min[0], min[1], min[2]},
+				.upperBounds = .{max[0], max[1], max[2]},
+				.lineSize = 1.0/128.0,
+			});
+			graphics.frame_uniforms.bindToPipeline(vulkan.currentFrame.renderCommands, pipeline);
+			vulkan.currentFrame.renderCommands.bindVertexArray(main.renderer.chunk_meshing.vao);
+			vulkan.currentFrame.renderCommands.drawIndexed(12*6*6, 0);
+		} else {
+			pipeline.bind(null);
 
-		c.glUniform3f(
-			uniforms.modelPosition,
-			@floatCast(relativePositionToPlayer[0]),
-			@floatCast(relativePositionToPlayer[1]),
-			@floatCast(relativePositionToPlayer[2]),
-		);
-		c.glUniform3f(uniforms.lowerBounds, min[0], min[1], min[2]);
-		c.glUniform3f(uniforms.upperBounds, max[0], max[1], max[2]);
-		c.glUniform1f(uniforms.lineSize, 1.0/128.0);
+			c.glUniform3f(
+				uniforms.modelPosition,
+				@floatCast(relativePositionToPlayer[0]),
+				@floatCast(relativePositionToPlayer[1]),
+				@floatCast(relativePositionToPlayer[2]),
+			);
+			c.glUniform3f(uniforms.lowerBounds, min[0], min[1], min[2]);
+			c.glUniform3f(uniforms.upperBounds, max[0], max[1], max[2]);
+			c.glUniform1f(uniforms.lineSize, 1.0/128.0);
 
-		main.renderer.chunk_meshing.vao.bind();
-		c.glDrawElements(c.GL_TRIANGLES, 12*6*6, c.GL_UNSIGNED_INT, null);
+			main.renderer.chunk_meshing.vao.bind();
+			c.glDrawElements(c.GL_TRIANGLES, 12*6*6, c.GL_UNSIGNED_INT, null);
+		}
 	}
 
 	pub fn render(playerPos: Vec3d) void {
