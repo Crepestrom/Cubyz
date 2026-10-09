@@ -329,6 +329,9 @@ pub const User = struct { // MARK: User
 		if (main.entity.components.@"cubyz:player_hand_animation".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:player_hand_animation".server.loadEmpty(self.id);
 		}
+		if (main.entity.components.@"cubyz:position".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:position".server.loadFromValues(self.id, self.lastPos);
+		}
 		if (main.entity.components.@"cubyz:hitbox".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:hitbox".server.loadFromValues(self.id, Vec3d{0, 0, main.game.Player.standingBoundingBoxExtent[2]}, main.game.Player.standingBoundingBoxExtent*Vec3d{2, 2, 2});
 		}
