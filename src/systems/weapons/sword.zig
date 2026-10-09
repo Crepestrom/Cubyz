@@ -93,7 +93,7 @@ pub const server = struct {
 	
 	pub fn baseAttack(givenEntity: Entity) void {
 		std.log.debug("where is this", .{});
-		systems.systems.selection_box.server.selectInSphere(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage);
+		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage);
 	}
 
 	fn dealDamage(givenEntity: Entity) void {

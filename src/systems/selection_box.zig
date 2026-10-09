@@ -63,10 +63,11 @@ pub const server = struct {
 			functionApplied(id);
 		}
 	}
-	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: main.callbacks.SimpleCallback) void {
+	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void) void {
 		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
 			const relativePos: Vec3d = position - (component.offset + (main.entity.components.@"cubyz:position".server.getPosition(id) orelse continue));
+			std.log.debug("what is this {} {}", .{combinedBoundingBox, relativePos});
 			if (combinedBoundingBox[0] < relativePos[0]) return;
 			if (combinedBoundingBox[1] < relativePos[1]) return;
 			if (combinedBoundingBox[2] < relativePos[2]) return;
