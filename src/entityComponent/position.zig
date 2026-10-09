@@ -34,8 +34,7 @@ pub const entityComponentVersion = 0;
 // ############################# Client only stuff ################################
 pub const client = struct {
 	const Component = struct {
-		offset: Vec3d,
-		size: Vec3d,
+		position: Vec3d,
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
 
@@ -61,8 +60,7 @@ pub const client = struct {
 		}
 
 		ptr.* = Component{
-			.offset = reader.readVec(Vec3d) catch return error.UnreadableComponentData,
-			.size = reader.readVec(Vec3d) catch return error.UnreadableComponentData,
+			.position = reader.readVec(Vec3d) catch return error.UnreadableComponentData,
 		};
 	}
 	pub fn unload(entity: Entity) void {
@@ -73,12 +71,10 @@ pub const client = struct {
 // ############################# Server only stuff ################################
 pub const server = struct {
 	pub const Component = struct {
-		offset: Vec3d,
-		size: Vec3d,
+		position: Vec3d,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
-			writer.writeVec(Vec3d, self.offset);
-			writer.writeVec(Vec3d, self.size);
+			writer.writeVec(Vec3d, self.position);
 			return .save;
 		}
 	};
@@ -95,26 +91,24 @@ pub const server = struct {
 		return (components.get(entity) orelse return null);
 	}
 	pub fn getPosition(entity: Entity) ?Vec3d {
-		const hitboxComponent = components.get(entity) orelse return null;
-		return hitboxComponent.offset + main.entity.components.@"cubyz:position".server.getPosition(entity) orelse return null;
+		const positionComponent = components.get(entity) orelse return null;
+		return positionComponent.position;
 	}
 	pub fn getSize(entity: Entity) ?Vec3d {
-		const hitboxComponent = components.get(entity) orelse return null;
-		return hitboxComponent.size;
+		const positionComponent = components.get(entity) orelse return null;
+		return positionComponent.size;
 	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.offset = reader.readVec(Vec3d) catch return error.UnreadableComponentData,
-			.size = reader.readVec(Vec3d) catch return error.UnreadableComponentData,
+			.position = reader.readVec(Vec3d) catch return error.UnreadableComponentData,
 		};
 	}
-	pub fn loadFromValues(entity: Entity, offset: Vec3d, size: Vec3d) void {
+	pub fn loadFromValues(entity: Entity, position: Vec3d) void {
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.offset = offset,
-			.size = size,
+			.position = position,
 		};
 	}
 	pub fn unload(entity: Entity) void {
