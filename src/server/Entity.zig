@@ -23,8 +23,8 @@ pub fn loadFrom(self: *@This(), id: main.entity.Entity, zon: ZonElement, comptim
 		try main.entity.loadComponentsFromBase64(components.as([]const u8) orelse "", self.id, side);
 	}
 	self.pos = switch (side) {
-		.client => &@"cubyz:position".client.get(id).?.position,
-		.server => &@"cubyz:position".server.get(id).?.position,
+		.client => &@"cubyz:position".client.find(id).position,
+		.server => &@"cubyz:position".server.find(id).position,
 	};
 	self.vel = zon.get(Vec3d, "velocity") orelse .{0, 0, 0};
 	self.rot = zon.get(Vec3f, "rotation") orelse .{0, 0, 0};

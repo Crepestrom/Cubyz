@@ -49,6 +49,11 @@ pub const client = struct {
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
 	}
+	pub fn find(entity: Entity) *Component {
+		return (components.get(entity) orelse {
+			return components.add(main.globalAllocator, entity);
+		});
+	}
 
 	pub fn load(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
@@ -98,6 +103,11 @@ pub const server = struct {
 
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
+	}
+	pub fn find(entity: Entity) *Component {
+		return (components.get(entity) orelse {
+			return components.add(main.globalAllocator, entity);
+		});
 	}
 	pub fn getPosition(entity: Entity) ?Vec3d {
 		const positionComponent = components.get(entity) orelse return null;
