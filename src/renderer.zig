@@ -1104,7 +1104,7 @@ pub const MeshSelection = struct { // MARK: MeshSelection
 		};
 		const stack = inventory.getStack(slot);
 		if (stack.item == .proceduralItem) {
-			if (!stack.item.proceduralItem.type.onUse().isNoop()) main.sync.client.executeCommand(.{ .useItem = .{ .source = inventory.getInventoryAndSlot(slot), .target = main.game.Player.id, .useType = .alt } });
+			if (!stack.item.proceduralItem.type.onUse().isNoop()) main.sync.client.executeCommand(.{ .useItem = .{ .source = inventory.getInventoryAndSlot(slot), .target = main.game.Player.id, .useType = .normal } });
 		}
 
 		if (selectedBlockPos) |selectedPos| {

@@ -1806,7 +1806,6 @@ pub const Command = struct { // MARK: Command
 				}
 			}
 			if (threadContext == .client) {
-				std.log.debug("send sword message", .{});
 				switch (item) {
 					.null,
 					.baseItem,
