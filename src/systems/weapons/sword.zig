@@ -24,6 +24,11 @@ const ServerWorld = main.server.ServerWorld;
 const items = main.items;
 const ItemStack = items.ItemStack;
 const random = main.random;
+const systems = main.systems;
+const entity = main.entity;
+const Entity = entity.Entity;
+
+const @"cubyz:position" = main.entity.components.@"cubyz:position";
 
 const c = @import("c");
 
@@ -54,7 +59,7 @@ pub const client = struct {
 		
 	}
 	fn swordSwing() void {
-		if (@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordSwing")) return;
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordSwing"))) return;
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.Player.id) orelse 0;
 		const swingWidth: f32 = 1;
 		const horizontalMovement = (sampleQuadratic(@max(2*swingProgress - 1, 0)) - @min(sampleQuadratic(2*swingProgress), 1))*swingWidth;
@@ -66,7 +71,7 @@ pub const client = struct {
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
 	}
 	fn block() void {
-		if (@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock")) return;
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
 		const pos = Vec3d{-1, 0.6, 0.0};
 		var modelMatrix = Mat4f.identity();
 
@@ -85,4 +90,13 @@ pub const client = struct {
 pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
+	
+	pub fn baseAttack(givenEntity: Entity) void {
+		std.log.debug("ran here", .{});
+		systems.systems.selection_box.server.selectInSphere(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage);
+	}
+
+	fn dealDamage(givenEntity: Entity) void {
+		main.sync.addHealth(2, .kill, .server, givenEntity);
+	}
 };

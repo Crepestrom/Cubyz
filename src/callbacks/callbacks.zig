@@ -11,6 +11,7 @@ pub const ServerBlockCallback = Callback(struct { block: Block, chunk: *main.chu
 pub const BlockTouchCallback = Callback(struct { entity: *main.server.Entity, source: Block, blockPos: Vec3i, deltaTime: f64 }, @import("block/touch/_list.zig"));
 
 pub const UseItemCallback = Callback(struct { entity: main.entity.Entity, useType: main.sync.Command.UseType }, @import("item/_list.zig"));
+pub const ReleaseUseItemCallback = Callback(struct { entity: main.entity.Entity, useType: main.sync.Command.UseType }, @import("item/_list.zig"));
 
 pub const Result = enum { handled, ignored };
 

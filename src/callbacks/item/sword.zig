@@ -21,6 +21,13 @@ pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.c
 			.normal => {@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});},
 			.alt => {@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 10});},
 		}
+	} else if (main.sync.threadContext == .server) {
+		switch (params.useType) {
+			.normal => {
+				main.systems.systems.sword.server.baseAttack(params.entity);
+			},
+			.alt => {},
+		}
 	}
 	return .handled;
 }
