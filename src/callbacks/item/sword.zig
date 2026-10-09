@@ -17,15 +17,13 @@ pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.c
 	_ = self;
 	if (main.sync.threadContext == .client) {
 		switch (params.useType) {
-			.normal => {@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});},
-			.alt => {@"cubyz:player_hand_animation".client.setPredictedAnimation(params.entity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 10});},
+			.normal => main.systems.systems.sword.client.swingSword(params.entity),
+			.alt => main.systems.systems.sword.client.block(params.entity),
 		}
 	} else if (main.sync.threadContext == .server) {
 		switch (params.useType) {
-			.normal => {
-				main.systems.systems.sword.server.baseAttack(params.entity);
-			},
-			.alt => {},
+			.normal => main.systems.systems.sword.server.swingSword(params.entity),
+			.alt => main.systems.systems.sword.server.block(params.entity),
 		}
 	}
 	return .handled;

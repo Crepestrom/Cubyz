@@ -18,7 +18,7 @@ const Vec3f = vec.Vec3f;
 const Vec4f = vec.Vec4f;
 const Vec3i = vec.Vec3i;
 const NeverFailingAllocator = main.heap.NeverFailingAllocator;
-const blocks = main.blocks;
+const animateBlocks = main.animateBlocks;
 const World = game.World;
 const ServerWorld = main.server.ServerWorld;
 const items = main.items;
@@ -54,11 +54,11 @@ pub const client = struct {
 	}
 	fn animateHandObject() void {
 		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false)) return;
-		swordSwing();
-		block();
+		animateSwordSwing();
+		animateBlock();
 		
 	}
-	fn swordSwing() void {
+	fn animateSwordSwing() void {
 		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordSwing"))) return;
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.Player.id) orelse 0;
 		const swingWidth: f32 = 1;
@@ -70,7 +70,7 @@ pub const client = struct {
 		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.5));
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
 	}
-	fn block() void {
+	fn animateBlock() void {
 		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
 		const pos = Vec3d{-1, 0.6, 0.0};
 		var modelMatrix = Mat4f.identity();
@@ -85,19 +85,33 @@ pub const client = struct {
 	fn sampleQuadraticAlt(inputValue: f32) f32 {
 		return std.math.clamp((inputValue - 1)*(inputValue - 1) + 1, 0, 1);
 	}
+
+	pub fn swingSword(givenEntity: Entity) void {
+		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
+	}
+	pub fn block(givenEntity: Entity) void {
+		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 2});
+	}
 };
 // ############################# Server only stuff ################################
 pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
 	
-	pub fn baseAttack(givenEntity: Entity) void {
-		std.log.debug("where is this", .{});
-		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage);
+	pub fn swingSword(givenEntity: Entity) void {
+		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
+		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
+		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage, .{ .ignoreSelf = givenEntity });
+	}
+	pub fn block(givenEntity: Entity) void {
+		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
+		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 2});
 	}
 
 	fn dealDamage(givenEntity: Entity) void {
-		std.log.debug("does this run", .{});
-		main.sync.addHealth(2, .kill, .server, givenEntity);
+		std.log.debug("damaged a entity", .{});
+		main.sync.addHealth(-2, .kill, .server, givenEntity);
 	}
 };

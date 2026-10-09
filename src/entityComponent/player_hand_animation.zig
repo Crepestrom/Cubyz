@@ -47,6 +47,9 @@ pub const client = struct {
 		handMatrix: Mat4f,
 		overwritable: bool = true,
 		loop: bool = false,
+		pub fn updateAnimation(self: *Component) void {
+			if (self.endTime < game.world.?.gameTime.load(.monotonic)) self.animationName = null;
+		}
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
 
@@ -96,7 +99,6 @@ pub const client = struct {
 	}
 	pub fn setAnimationMatrix(entity: Entity, givenMatrix: Mat4f) void {
 		const animationComponent = components.get(entity) orelse return;
-		if (animationComponent.endTime < game.world.?.gameTime.load(.monotonic)) animationComponent.animationName = null;
 		if (animationComponent.animationName == null) return;
 		animationComponent.handMatrix = givenMatrix;
 	}
@@ -136,6 +138,9 @@ pub const server = struct {
 			writer.writeBool(self.loop);
 			return .save;
 		}
+		pub fn updateAnimation(self: *Component) void {
+			if (self.endTime < (game.world orelse return).gameTime.load(.monotonic)) self.animationName = null;
+		}
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
 
@@ -164,5 +169,19 @@ pub const server = struct {
 	}
 	pub fn unload(entity: Entity) void {
 		components.remove(entity) catch {};
+	}
+	pub fn setAnimation(entity: Entity, attemptedAnimation: animationInfo) void {
+		const animationComponent = components.get(entity) orelse return;
+		if (animationComponent.overwritable) {
+			animationComponent.animationName = attemptedAnimation.animationName;
+			animationComponent.length = attemptedAnimation.animationLength;
+			animationComponent.endTime = attemptedAnimation.animationLength + game.world.?.gameTime.load(.monotonic);
+			animationComponent.overwritable = attemptedAnimation.overwritable;
+		}
+	}
+	pub fn isPlayingAnimation(entity: Entity) ?bool {
+		const animationComponent  = components.get(entity) orelse return null;
+		if (animationComponent.animationName == null) return false;
+		return true;
 	}
 };

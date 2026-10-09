@@ -53,6 +53,10 @@ pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
 
+	pub const SelectionOptions = struct {
+		ignoreSelf: ?Entity,
+	};
+
 	pub fn selectInSphere(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void) void {
 		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const boundingBox: Vec3d = @splat(radius);
@@ -63,15 +67,15 @@ pub const server = struct {
 			functionApplied(id);
 		}
 	}
-	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void) void {
+	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void, options: SelectionOptions) void {
 		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
 			const relativePos: Vec3d = position - (component.offset + (main.entity.components.@"cubyz:position".server.getPosition(id) orelse continue));
-			std.log.debug("what is this {} {}", .{combinedBoundingBox, relativePos});
 			if (combinedBoundingBox[0] < relativePos[0]) return;
 			if (combinedBoundingBox[1] < relativePos[1]) return;
 			if (combinedBoundingBox[2] < relativePos[2]) return;
-			functionApplied.run();
+			if (options.ignoreSelf != null) {if (options.ignoreSelf.? == id) return;}
+			functionApplied(id);
 		}
 	}
 };
