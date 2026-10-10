@@ -41,7 +41,7 @@ pub const client = struct {
 		_ = ambientLight;
 		_ = playerPos;
 		_ = deltaTime;
-		for (@"cubyz:player_hand_animation".server.components.dense.items) |*component| {
+		for (@"cubyz:player_hand_animation".client.components.dense.items) |*component| {
 			component.updateAnimation();
 		}
 	}

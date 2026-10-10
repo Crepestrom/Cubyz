@@ -139,7 +139,7 @@ pub const server = struct {
 			return .save;
 		}
 		pub fn updateAnimation(self: *Component) void {
-			if (self.endTime < (game.world orelse return).gameTime.load(.monotonic)) self.animationName = null;
+			if (self.endTime < main.server.world.?.gameTime) self.animationName = null;
 		}
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
@@ -175,7 +175,7 @@ pub const server = struct {
 		if (animationComponent.overwritable) {
 			animationComponent.animationName = attemptedAnimation.animationName;
 			animationComponent.length = attemptedAnimation.animationLength;
-			animationComponent.endTime = attemptedAnimation.animationLength + game.world.?.gameTime.load(.monotonic);
+			animationComponent.endTime = attemptedAnimation.animationLength + main.server.world.?.gameTime;
 			animationComponent.overwritable = attemptedAnimation.overwritable;
 		}
 	}
