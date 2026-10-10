@@ -66,7 +66,7 @@ pub const client = struct {
 		};
 	}
 	pub fn unload(entity: Entity) void {
-		_ = entity;
+		components.remove(entity) catch {};
 	}
 };
 
@@ -118,6 +118,6 @@ pub const server = struct {
 		};
 	}
 	pub fn unload(entity: Entity) void {
-		_ = entity;
+		components.remove(entity) catch {};
 	}
 };

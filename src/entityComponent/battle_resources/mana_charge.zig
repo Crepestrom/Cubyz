@@ -72,7 +72,7 @@ pub const client = struct {
 		};
 	}
 	pub fn unload(entity: Entity) void {
-		_ = entity;
+		components.remove(entity) catch {};
 	}
 
 	pub fn changePredictedManaCharge(givenEntity: Entity, change: f32) void {
@@ -133,7 +133,7 @@ pub const server = struct {
 		};
 	}
 	pub fn unload(entity: Entity) void {
-		_ = entity;
+		components.remove(entity) catch {};
 	}
 
 	pub fn addManaCharge(entity: Entity, value: f32) void {
