@@ -1769,9 +1769,11 @@ pub const Command = struct { // MARK: Command
 		}
 	};
 
-	pub const UseType = enum(u1) {
+	pub const UseType = enum(u2) {
 		normal = 0,
 		alt = 1,
+		normalEnd = 2,
+		altEnd = 3,
 	};
 
 	const UseItem = struct { // MARK: UseItem

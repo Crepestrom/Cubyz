@@ -565,21 +565,39 @@ var nextBlockBreakTime: ?std.Io.Timestamp = null;
 pub fn pressPlace(mods: main.Window.Key.Modifiers) void {
 	const time = main.timestamp();
 	nextBlockPlaceTime = time.addDuration(main.settings.updateRepeatDelay);
+	const skipPlacing = useItem(mods, .alt);
+	if (skipPlacing) return;
 	Player.placeBlock(mods);
 }
 
-pub fn releasePlace(_: main.Window.Key.Modifiers) void {
+pub fn releasePlace(mods: main.Window.Key.Modifiers) void {
 	nextBlockPlaceTime = null;
+	_ = useItem(mods, .altEnd);
 }
 
-pub fn pressBreak(_: main.Window.Key.Modifiers) void {
+pub fn pressBreak(mods: main.Window.Key.Modifiers) void {
 	const time = main.timestamp();
 	nextBlockBreakTime = time.addDuration(main.settings.updateRepeatDelay);
+	const skipBreaking = useItem(mods, .normal);
+	if (skipBreaking) return;
 	Player.breakBlock(0);
 }
 
-pub fn releaseBreak(_: main.Window.Key.Modifiers) void {
+fn useItem(_: main.Window.Key.Modifiers, useType: main.sync.Command.UseType) bool {
+	const slot = main.game.Player.selectedSlot;
+	const stack = main.game.Player.inventory.getStack(slot);
+	if (stack.item == .proceduralItem) {
+		if (!stack.item.proceduralItem.type.onUse().isNoop()) {
+			main.sync.client.executeCommand(.{ .useItem = .{ .source = main.game.Player.inventory.getInventoryAndSlot(slot), .target = main.game.Player.id, .useType = useType } });
+			return true;
+		}
+	}
+	return false;
+}
+
+pub fn releaseBreak(mods: main.Window.Key.Modifiers) void {
 	nextBlockBreakTime = null;
+	_ = useItem(mods, .normalEnd);
 }
 
 pub fn pressAcquireSelectedBlock(_: main.Window.Key.Modifiers) void {

@@ -19,11 +19,15 @@ pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.c
 		switch (params.useType) {
 			.normal => main.systems.systems.sword.client.swingSword(params.entity),
 			.alt => main.systems.systems.sword.client.block(params.entity),
+			.normalEnd => {},
+			.altEnd => main.systems.systems.sword.server.blockEnd(params.entity),
 		}
 	} else if (main.sync.threadContext == .server) {
 		switch (params.useType) {
 			.normal => main.systems.systems.sword.server.swingSword(params.entity),
 			.alt => main.systems.systems.sword.server.block(params.entity),
+			.normalEnd => {},
+			.altEnd => main.systems.systems.sword.server.blockEnd(params.entity),
 		}
 	}
 	return .handled;

@@ -48,7 +48,13 @@ pub const client = struct {
 		overwritable: bool = true,
 		loop: bool = false,
 		pub fn updateAnimation(self: *Component) void {
-			if (self.endTime < game.world.?.gameTime.load(.monotonic)) self.animationName = null;
+			if (self.endTime < game.world.?.gameTime.load(.monotonic)) {
+				if (self.loop) {
+					self.endTime = game.world.?.gameTime.load(.monotonic) + self.length;
+				} else {
+					self.animationName = null;
+				}
+			}
 		}
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
@@ -95,6 +101,7 @@ pub const client = struct {
 			animationComponent.length = attemptedAnimation.animationLength;
 			animationComponent.endTime = attemptedAnimation.animationLength + game.world.?.gameTime.load(.monotonic);
 			animationComponent.overwritable = attemptedAnimation.overwritable;
+			animationComponent.loop = attemptedAnimation.loop;
 		}
 	}
 	pub fn setAnimationMatrix(entity: Entity, givenMatrix: Mat4f) void {
@@ -105,8 +112,8 @@ pub const client = struct {
 	pub fn getPredictedAnimationProgress(entity: Entity) ?f32 {
 		const animationComponent = components.get(entity) orelse return null;
 		if (animationComponent.animationName == null) return null;
-		const currentTimePassed = -(game.world.?.gameTime.load(.monotonic) - animationComponent.endTime);
-		return std.math.clamp(@as(f32, @floatFromInt(currentTimePassed))/@as(f32, @floatFromInt(animationComponent.length)), 0, 1);
+		const currentTimePassed = (animationComponent.endTime - game.world.?.gameTime.load(.monotonic));
+		return std.math.clamp(1 - @as(f32, @floatFromInt(currentTimePassed))/@as(f32, @floatFromInt(animationComponent.length)), 0, 1);
 	}
 	pub fn getAnimationMatrix(entity: Entity) ?Mat4f {
 		const animationComponent = components.get(entity) orelse return null;
@@ -139,7 +146,13 @@ pub const server = struct {
 			return .save;
 		}
 		pub fn updateAnimation(self: *Component) void {
-			if (self.endTime < main.server.world.?.gameTime) self.animationName = null;
+			if (self.endTime < game.world.?.gameTime.load(.monotonic)) {
+				if (self.loop) {
+					self.endTime = game.world.?.gameTime.load(.monotonic) + self.length;
+				} else {
+					self.animationName = null;
+				}
+			}
 		}
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
@@ -177,6 +190,7 @@ pub const server = struct {
 			animationComponent.length = attemptedAnimation.animationLength;
 			animationComponent.endTime = attemptedAnimation.animationLength + main.server.world.?.gameTime;
 			animationComponent.overwritable = attemptedAnimation.overwritable;
+			animationComponent.loop = attemptedAnimation.loop;
 		}
 	}
 	pub fn isPlayingAnimation(entity: Entity) ?bool {

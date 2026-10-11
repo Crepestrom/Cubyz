@@ -56,18 +56,20 @@ pub const client = struct {
 		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false)) return;
 		animateSwordSwing();
 		animateBlock();
-		
+		animateBlockEnd();
 	}
 	fn animateSwordSwing() void {
 		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordSwing"))) return;
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.Player.id) orelse 0;
-		const swingWidth: f32 = 1;
+		const swingWidth: f32 = 3;
 		const horizontalMovement = (sampleQuadratic(@max(2*swingProgress - 1, 0)) - @min(sampleQuadratic(2*swingProgress), 1))*swingWidth;
-		const pos = Vec3d{horizontalMovement, 1.0, 0.0};
+		const pos = Vec3d{horizontalMovement, 2.0, 0.0};
 		var modelMatrix = Mat4f.identity();
 
 		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.5));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(0.5*std.math.pi));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(-0.5*std.math.pi*swingProgress));
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
 	}
 	fn animateBlock() void {
@@ -77,6 +79,17 @@ pub const client = struct {
 
 		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.25));
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
+	}
+	pub fn animateBlockEnd() void {
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlockEnd"))) return;
+		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.Player.id) orelse 0;
+		const pos = Vec3d{-1 + swingProgress, 0.6, 0.0};
+		var modelMatrix = Mat4f.identity();
+
+		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.25));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.25*swingProgress));
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
 	}
 	fn sampleQuadratic(inputValue: f32) f32 {
@@ -93,7 +106,11 @@ pub const client = struct {
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity) orelse true) return;
-		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 2});
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
+	}
+	pub fn blockEnd(givenEntity: Entity) void {
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
 	}
 };
 // ############################# Server only stuff ################################
@@ -109,7 +126,11 @@ pub const server = struct {
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
-		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 2});
+		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
+	}
+	pub fn blockEnd(givenEntity: Entity) void {
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
 	}
 
 	fn dealDamage(givenEntity: Entity) void {
