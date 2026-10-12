@@ -146,9 +146,9 @@ pub const server = struct {
 			return .save;
 		}
 		pub fn updateAnimation(self: *Component) void {
-			if (self.endTime < game.world.?.gameTime.load(.monotonic)) {
+			if (self.endTime < main.server.world.?.gameTime) {
 				if (self.loop) {
-					self.endTime = game.world.?.gameTime.load(.monotonic) + self.length;
+					self.endTime = main.server.world.?.gameTime + self.length;
 				} else {
 					self.animationName = null;
 				}

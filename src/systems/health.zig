@@ -67,6 +67,7 @@ pub const server = struct {
 				continue;
 			}
 		}
+		std.log.debug("took damage {}", .{(main.entity.components.@"cubyz:health".server.get(givenEntity) orelse return false).health});
 		main.entity.components.@"cubyz:health_change".server.unload(givenEntity);
 		return ((main.entity.components.@"cubyz:health".server.get(givenEntity) orelse return false).health == 0);
 	}
@@ -77,6 +78,7 @@ pub const server = struct {
 
 	pub fn onAddHealth() void {
 		for (entity.components.@"cubyz:health_change".server.components.dense.items, entity.components.@"cubyz:health_change".server.components.denseToSparseIndex.items) |component, id| {
+			std.log.debug("now it is adding health to the player {}", .{component.change});
 			main.entity.components.@"cubyz:health".server.addHealth(id, component.change);
 		}
 	}

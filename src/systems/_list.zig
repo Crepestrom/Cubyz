@@ -8,5 +8,6 @@ pub const ammo = @import("ammo.zig");
 pub const mana_charge = @import("mana_charge.zig");
 pub const selection_box = @import("selection_box.zig");
 pub const player_hand_animation = @import("player_hand_animation.zig");
+pub const weapon_blocking = @import("weapon_blocking.zig");
 
 pub const sword = @import("weapons/sword.zig");

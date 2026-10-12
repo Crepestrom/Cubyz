@@ -384,9 +384,7 @@ pub const Command = struct { // MARK: Command
 		create = 0,
 		delete = 1,
 		useDurability = 2,
-		health = 3,
 		kill = 4,
-		energy = 5,
 		rotation = 6,
 	};
 
@@ -407,17 +405,9 @@ pub const Command = struct { // MARK: Command
 			inv: InventoryAndSlot,
 			durability: u32,
 		},
-		health: struct {
-			target: ?*main.server.User,
-			health: f32,
-		},
 		kill: struct {
 			target: ?*main.server.User,
 			spawnPoint: Vec3d,
-		},
-		energy: struct {
-			target: ?*main.server.User,
-			energy: f32,
 		},
 		rotation: struct {
 			target: ?*main.server.User,
@@ -460,14 +450,8 @@ pub const Command = struct { // MARK: Command
 
 					durability.inv.inv.update();
 				},
-				.health => |health| {
-					@"cubyz:health".client.changePredictedHealth(main.game.Player.id, health.health);
-				},
 				.kill => |kill| {
 					main.game.Player.kill(kill.spawnPoint);
-				},
-				.energy => |energy| {
-					@"cubyz:energy".client.changePredictedEnergy(main.game.Player.id, energy.energy);
 				},
 				.rotation => |rotation| {
 					main.game.camera.rotation = rotation.rotation;
@@ -485,7 +469,7 @@ pub const Command = struct { // MARK: Command
 					}
 					return result;
 				},
-				inline .health, .kill, .energy, .rotation => |data| {
+				inline .kill, .rotation => |data| {
 					const out = allocator.alloc(*main.server.User, 1);
 					out[0] = data.target.?;
 					return out;
@@ -495,7 +479,7 @@ pub const Command = struct { // MARK: Command
 
 		pub fn ignoreSource(self: SyncOperation) bool {
 			return switch (self) {
-				.create, .delete, .useDurability, .health, .energy, .rotation => true,
+				.create, .delete, .useDurability, .rotation => true,
 				.kill => false,
 			};
 		}
@@ -528,22 +512,10 @@ pub const Command = struct { // MARK: Command
 
 					return out;
 				},
-				.health => {
-					return .{.health = .{
-						.target = null,
-						.health = try reader.readFloat(f32),
-					}};
-				},
 				.kill => {
 					return .{.kill = .{
 						.target = null,
 						.spawnPoint = try reader.readVec(Vec3d),
-					}};
-				},
-				.energy => {
-					return .{.energy = .{
-						.target = null,
-						.energy = try reader.readFloat(f32),
 					}};
 				},
 				.rotation => {
@@ -574,14 +546,8 @@ pub const Command = struct { // MARK: Command
 					durability.inv.write(&writer);
 					writer.writeInt(u32, durability.durability);
 				},
-				.health => |health| {
-					writer.writeFloat(f32, health.health);
-				},
 				.kill => |kill| {
 					writer.writeVec(Vec3d, kill.spawnPoint);
-				},
-				.energy => |energy| {
-					writer.writeFloat(f32, energy.energy);
 				},
 				.rotation => |rotation| {
 					writer.writeVec(Vec3f, rotation.rotation);
@@ -688,12 +654,8 @@ pub const Command = struct { // MARK: Command
 					info.item.proceduralItem.durability = info.previousDurability;
 					info.source.inv.update();
 				},
-				.addHealth => |info| {
-					@"cubyz:health".client.setPredictedHealth(main.game.Player.id, info.previous);
-				},
-				.addEnergy => |info| {
-					@"cubyz:energy".client.setPredictedEnergy(main.game.Player.id, info.previous);
-				},
+				.addHealth => {},
+				.addEnergy => {},
 			}
 		}
 	}

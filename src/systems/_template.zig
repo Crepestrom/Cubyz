@@ -24,6 +24,9 @@ const ServerWorld = main.server.ServerWorld;
 const items = main.items;
 const ItemStack = items.ItemStack;
 const random = main.random;
+const systems = main.systems;
+const entity = main.entity;
+const Entity = entity.Entity;
 
 const c = @import("c");
 

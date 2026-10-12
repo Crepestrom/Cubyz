@@ -59,10 +59,11 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		sortDirection: PhaseSortType,
 		targetSortPhase: []const u8,
 		self: []const u8,
-		priority: i32 = 0,
+		priority: i32,
 	};
 	pub const FunctionStep = struct {
 		targetPhase: []const u8,
+		order: usize = 0,
 	};
 
 	pub fn getSortedOrder(comptime declarations: []const std.builtin.Type.Declaration, comptime subscribeFunctionName: []const u8, comptime addPhaseFunctionName: []const u8) []const std.builtin.Type.Declaration {
@@ -72,34 +73,26 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		const sortedPhases = sortPhases(declarations, &phaseNameIds, addPhaseFunctionName);
 		const functionSteps = getFunctionSteps(declarations, subscribeFunctionName);
 
-		var sortedFunctionSteps = declarations;
-		var nextFreeSlot: usize = 0;
+		var intermediary: [0]std.builtin.Type.Declaration = .{};
+		var sortedFunctionSteps: []const std.builtin.Type.Declaration = &intermediary;
 		for (sortedPhases) |phase| {
-			AppendCorrectFunctionSteps(declarations,
-			phase,
-			&nextFreeSlot,
-			&sortedFunctionSteps,
-			functionSteps,
-			&phaseNameIds
-			);
+			for (functionSteps) |functionStep| {
+				if (PhaseType.fromFunctionStep(functionStep.targetPhase, &phaseNameIds) == PhaseType.fromFunctionStep(phase.self, &phaseNameIds)) {
+					addToDeclarationArray(&sortedFunctionSteps, declarations[functionStep.order]);
+				}
+			}
 		}
 		return sortedFunctionSteps;
 	}
 
-	fn AppendCorrectFunctionSteps(comptime declarations: []const std.builtin.Type.Declaration, comptime targetPhase: Phase, comptime nextFreeSlot: *usize, overwrittenArray: *[]const std.builtin.Type.Declaration, comptime functionSteps: []const FunctionStep, phaseNameIds: *[]const[]const u8) void {
-		for (functionSteps, 0..) |functionStep, i| {
-			if (PhaseType.fromFunctionStep(functionStep.targetPhase, phaseNameIds) == PhaseType.fromFunctionStep(targetPhase.self, phaseNameIds)) {
-				overwrittenArray[nextFreeSlot] = declarations[i];
-			}
-		}
-	} 
-
 	fn getFunctionSteps(comptime declarations: []const std.builtin.Type.Declaration, comptime subscribeFunctionName: []const u8) []const FunctionStep {
 		const startingList: [0]FunctionStep = .{};
 		var stepList: []const FunctionStep = &startingList;
-		for (declarations) |decl| {
+		for (declarations, 0..) |decl, i| {
 			if (@hasDecl(@field(systems, decl.name).server, subscribeFunctionName)) {
-				addToStepArray(&stepList, @field(@field(systems, decl.name).server, subscribeFunctionName)());
+				var newStep: FunctionStep = @field(@field(systems, decl.name).server, subscribeFunctionName)();
+				newStep.order = i;
+				addToStepArray(&stepList, newStep);
 			} else {
 				continue;
 			}
@@ -119,17 +112,19 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 			.sortDirection = .before,
 			.self = "start",
 			.targetSortPhase = "end",
+			.priority = std.math.minInt(i32),
 		},
 		Phase{
 			.sortDirection = .after,
-			.self = "start",
-			.targetSortPhase = "end",
+			.self = "end",
+			.targetSortPhase = "start",
+			.priority = std.math.minInt(i32),
 		}};
 		var phaseList: []Phase = &startingList;
 		for (declarations) |decl| {
 			if (@hasDecl(@field(systems, decl.name).server, addPhaseFunctionName)) {
 				const newPhase: Phase = @field(@field(systems, decl.name).server, addPhaseFunctionName)();
-				PhaseType.find(newPhase.self, phaseNameIds);
+				_ = PhaseType.findFromName(newPhase.self, phaseNameIds);
 				addToPhaseArray(&phaseList, newPhase);
 			} else {
 				continue;
@@ -146,12 +141,21 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		phaseArray.* = newPhaseArray;
 	}
 
-	fn addToPhaseArray(phaseArray: *[]const Phase, addedPhase: Phase) void {
-		const extraPhaseArray: [1]Phase = .{addedPhase};
-		const translatedPhaseArray: []const Phase = &extraPhaseArray;
-		const newArray = phaseArray.*;
-		const newPhaseArray = newArray ++ translatedPhaseArray;
-		phaseArray.* = newPhaseArray;
+	fn addToPhaseArray(phaseArray: *[]Phase, addedPhase: Phase) void {
+		var extraPhaseArray: [phaseArray.len + 1]Phase = undefined;
+		for (phaseArray.*, 0..) |newPhase, i| {
+			extraPhaseArray[i] = newPhase;
+		}
+		extraPhaseArray[phaseArray.len] = addedPhase;
+		phaseArray.* = &extraPhaseArray;
+	}
+
+	fn addToDeclarationArray(stepArray: *[]const std.builtin.Type.Declaration, addedStep: std.builtin.Type.Declaration) void {
+		const extraStepArray: [1]std.builtin.Type.Declaration = .{addedStep};
+		const translatedStepArray: []const std.builtin.Type.Declaration = &extraStepArray;
+		const newArray = stepArray.*;
+		const newStepArray = newArray ++ translatedStepArray;
+		stepArray.* = newStepArray;
 	}
 
 	fn addToStepArray(stepArray: *[]const FunctionStep, addedStep: FunctionStep) void {
@@ -178,7 +182,9 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 					if (phaseAtargetSortPhase == PhaseType.fromSelfSortPhase(phaseB.self, self.phaseNameIds)) return true;
 					if (phaseAtargetSortPhase == PhaseType.fromTargetSortPhase(phaseB.targetSortPhase, self.phaseNameIds)) {
 						if (phaseB.sortDirection == .after) return false;
-						if (phaseA.priority == phaseB.priority) @compileError("Two Phases cannot sort to the same Target Phase at the same priority");
+						if (phaseA.priority == phaseB.priority) {
+							@compileError(std.fmt.comptimePrint("Two Phases cannot sort to the same Target Phase at the same priority | {s} and {s} targeting {s} at priority {}", .{phaseA.self, phaseB.self, phaseA.targetSortPhase, phaseA.priority}));
+						}
 						if (phaseA.priority <= phaseB.priority) return true;
 						return false;
 					}

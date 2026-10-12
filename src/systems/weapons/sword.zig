@@ -33,6 +33,7 @@ const @"cubyz:position" = main.entity.components.@"cubyz:position";
 const c = @import("c");
 
 const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
+const @"cubyz:weapon_blocking" = main.entity.components.@"cubyz:weapon_blocking";
 
 const entityComponent = main.entityComponent;
 
@@ -101,16 +102,18 @@ pub const client = struct {
 
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity) orelse true) return;
-		std.log.debug("swing sword on server", .{});
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity) orelse true) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
+		const blockComponent = @"cubyz:weapon_blocking".client.find(givenEntity);
+		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
 		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
+		@"cubyz:weapon_blocking".client.unload(givenEntity);
 	}
 };
 // ############################# Server only stuff ################################
@@ -127,10 +130,15 @@ pub const server = struct {
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
+		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
+		std.log.debug("start block server", .{});
+		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
-		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
+		if (!(@"cubyz:player_hand_animation".server.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
+		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
+		std.log.debug("end block server", .{});
+		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 
 	fn dealDamage(givenEntity: Entity) void {

@@ -49,6 +49,11 @@ pub const client = struct {
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
 	}
+	pub fn find(entity: Entity) *Component {
+		return (components.get(entity) orelse {
+			return components.add(main.globalAllocator, entity);
+		});
+	}
 
 	pub fn load(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
@@ -74,7 +79,7 @@ pub const server = struct {
 		blockingPower: f32,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
-			writer.writeVec(Vec3d, self.position);
+			writer.writeFloat(f32, self.blockingPower);
 			return .save;
 		}
 	};
@@ -100,13 +105,13 @@ pub const server = struct {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.position = reader.readVec(Vec3d) catch return error.UnreadableComponentData,
+			.blockingPower = reader.readFloat(f32) catch return error.UnreadableComponentData,
 		};
 	}
-	pub fn loadFromValue(entity: Entity, position: Vec3d) void {
+	pub fn loadFromValue(entity: Entity, blockingPower: f32) void {
 		const ptr: *Component = components.add(main.globalAllocator, entity);
 		ptr.* = Component{
-			.position = position,
+			.blockingPower = blockingPower,
 		};
 	}
 	pub fn unload(entity: Entity) void {

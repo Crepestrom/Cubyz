@@ -62,6 +62,7 @@ pub const client = struct {
 		var ptr: *Component = undefined;
 		if (components.get(entity)) |p| {
 			ptr = p;
+			std.log.debug("got message of thing that exists", .{});
 		} else {
 			ptr = components.add(main.globalAllocator, entity);
 		}
@@ -75,23 +76,15 @@ pub const client = struct {
 		components.remove(entity) catch {};
 	}
 
-	pub fn changePredictedHealth(givenEntity: Entity, change: f32) void {
-		main.sync.threadContext.assertCorrectContext(.client);
-		const healthComponent = components.get(givenEntity) orelse return;
-		healthComponent.health = std.math.clamp(healthComponent.health + change, 0, healthComponent.maxHealth);
-
+	pub fn changePredictedHealth(_: Entity, _: f32) void {
 	}
-	pub fn setPredictedHealth(givenEntity: Entity, value: f32) void {
-		main.sync.threadContext.assertCorrectContext(.client);
-		const healthComponent = components.get(givenEntity) orelse return;
-		healthComponent.health = std.math.clamp(value, 0, healthComponent.maxHealth);
+	pub fn setPredictedHealth(_: Entity, _: f32) void {
 	}
 	pub fn resetPredictedHealth(entity: Entity) void {
 		main.sync.threadContext.assertCorrectContext(.client);
 		const healthComponent = components.get(entity) orelse return;
 		const value = healthComponent.maxHealth;
 		healthComponent.health = std.math.clamp(value, 0, healthComponent.maxHealth);
-		main.entity.server.transmitChange(main.entity.components.@"cubyz:health", entity);
 	}
 };
 
