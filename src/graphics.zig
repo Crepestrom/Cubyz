@@ -1864,6 +1864,12 @@ pub const FrameBuffer = struct { // MARK: FrameBuffer
 			c.glDeleteRenderbuffers(1, &self.depthTexture);
 		}
 		c.glDeleteTextures(1, &self.texture);
+		if (main.settings.launch_config.vulkanTestingMode) {
+			self.color.deferredDeinit();
+			if (self.hasDepthTexture) {
+				self.depth.deferredDeinit();
+			}
+		}
 	}
 
 	pub fn updateSize(self: *FrameBuffer, _width: u31, _height: u31, internalFormat: c_int) void {
@@ -1903,20 +1909,6 @@ pub const FrameBuffer = struct { // MARK: FrameBuffer
 			}
 		}
 		return self;
-	}
-
-	pub fn deinit(self: *FrameBuffer) void {
-		c.glDeleteFramebuffers(1, &self.frameBuffer);
-		if (self.hasDepthTexture) {
-			c.glDeleteRenderbuffers(1, &self.depthTexture);
-		}
-		c.glDeleteTextures(1, &self.texture);
-		if (main.settings.launch_config.vulkanTestingMode) {
-			self.color.deferredDeinit();
-			if (self.hasDepthTexture) {
-				self.depth.deferredDeinit();
-			}
-		}
 	}
 
 	pub fn bindAndClear(self: FrameBuffer, commandBuffer: CommandBuffer, clearColor: CommandBuffer.BeginRenderingOptions.LoadOp, clearDepth: CommandBuffer.BeginRenderingOptions.LoadOp) void {
