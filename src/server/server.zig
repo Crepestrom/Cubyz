@@ -333,7 +333,7 @@ pub const User = struct { // MARK: User
 			main.entity.components.@"cubyz:position".server.loadFromValues(self.id, self.lastPos);
 		}
 		if (main.entity.components.@"cubyz:hitbox".server.get(self.id) == null) {
-			main.entity.components.@"cubyz:hitbox".server.loadFromValues(self.id, Vec3d{0, 0, main.game.Player.standingBoundingBoxExtent[2]}, main.game.Player.standingBoundingBoxExtent*Vec3d{2, 2, 2});
+			main.entity.components.@"cubyz:hitbox".server.loadFromValues(self.id, Vec3d{0, 0, main.game.player.standingBoundingBoxExtent[2]}, main.game.player.standingBoundingBoxExtent*Vec3d{2, 2, 2});
 		}
 		main.entity.components.@"cubyz:permissions".server.addToGroup(self.id, permission.Group.default);
 
@@ -730,7 +730,7 @@ fn update() void { // MARK: update()
 		});
 	}
 	for (userList) |user| {
-		main.network.protocols.entityPosition.send(user.conn, user.player().pos.*, entityData.items, itemData);
+		main.network.protocols.entity_position.send(user.conn, user.player().pos.*, entityData.items, itemData);
 	}
 
 	for (userList) |user| {

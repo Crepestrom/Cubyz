@@ -378,7 +378,7 @@ pub const ItemDropManager = struct { // MARK: ItemDropManager
 				ii += 1;
 				continue;
 			}
-			const hitbox = main.game.Player.outerBoundingBox;
+			const hitbox = main.game.player.outerBoundingBox;
 			const min = user.player().pos.* + hitbox.min;
 			const max = user.player().pos.* + hitbox.max;
 			const itemPos = self.list.items(.pos)[i];
@@ -827,9 +827,9 @@ pub const item_drop_renderer = struct { // MARK: item_drop_renderer
 	}
 
 	fn isPlayingCustomAnimation() bool {
-		return @"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false;
+		return @"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.player.id) orelse false;
 	}
 	fn getCustomAnimation() Mat4f {
-		return @"cubyz:player_hand_animation".client.getAnimationMatrix(main.game.Player.id) orelse Mat4f.identity();
+		return @"cubyz:player_hand_animation".client.getAnimationMatrix(main.game.player.id) orelse Mat4f.identity();
 	}
 };

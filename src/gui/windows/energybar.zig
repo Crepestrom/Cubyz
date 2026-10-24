@@ -50,8 +50,8 @@ pub fn render() void {
 	var y: f32 = 0;
 	var x: f32 = 0;
 	var energy: f32 = 0;
-	const playerEnergy = @"cubyz:energy".client.getPredictedEnergy(main.game.Player.id) orelse 0;
-	const playerMaxEnergy = @"cubyz:energy".client.getPredictedMaxEnergy(main.game.Player.id) orelse 0;
+	const playerEnergy = @"cubyz:energy".client.getPredictedEnergy(main.game.player.id) orelse 0;
+	const playerMaxEnergy = @"cubyz:energy".client.getPredictedMaxEnergy(main.game.player.id) orelse 0;
 	while (energy < playerMaxEnergy) : (energy += 1) {
 		if (x >= window.contentSize[0]) {
 			x = 0;

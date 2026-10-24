@@ -827,8 +827,8 @@ pub const Command = struct { // MARK: Command
 						}});
 					}
 				} else {
-					info.previous = @"cubyz:health".client.getPredictedHealth(main.game.Player.id) orelse return;
-					@"cubyz:health".client.changePredictedHealth(main.game.Player.id, info.health);
+					info.previous = @"cubyz:health".client.getPredictedHealth(main.game.player.id) orelse return;
+					@"cubyz:health".client.changePredictedHealth(main.game.player.id, info.health);
 				}
 			},
 			.addEnergy => |*info| {
@@ -836,7 +836,7 @@ pub const Command = struct { // MARK: Command
 					info.previous = @"cubyz:energy".server.getEnergy(info.target.?.player().id) orelse return;
 					main.systems.systems.energy.server.addEnergy(info.target.?.player().id, info.energy);
 				} else {
-					info.previous = @"cubyz:energy".server.getEnergy(main.game.Player.id) orelse return;
+					info.previous = @"cubyz:energy".server.getEnergy(main.game.player.id) orelse return;
 					@"cubyz:energy".client.changePredictedEnergy(info.target.?.player().id, info.energy);
 				}
 			},
@@ -1682,7 +1682,7 @@ pub const Command = struct { // MARK: Command
 				.target = target,
 				.health = self.health,
 				.cause = self.cause,
-				.previous = if (ctx.side == .server) (@"cubyz:health".server.getHealth(target.?.player().id) orelse return) else (@"cubyz:health".client.getPredictedHealth(main.game.Player.id) orelse return),
+				.previous = if (ctx.side == .server) (@"cubyz:health".server.getHealth(target.?.player().id) orelse return) else (@"cubyz:health".client.getPredictedHealth(main.game.player.id) orelse return),
 			}});
 		}
 
@@ -1774,7 +1774,7 @@ pub const Command = struct { // MARK: Command
 					.null,
 					.baseItem,
 					.proceduralItem => {
-						_ = item.proceduralItem.type.onUse().run(.{ .entity = main.game.Player.id , .useType = self.useType});
+						_ = item.proceduralItem.type.onUse().run(.{ .entity = main.game.player.id , .useType = self.useType});
 					},
 				}
 			}

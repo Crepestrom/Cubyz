@@ -585,11 +585,11 @@ pub fn pressBreak(mods: main.Window.Key.Modifiers) void {
 }
 
 fn useItem(_: main.Window.Key.Modifiers, useType: main.sync.Command.UseType) bool {
-	const slot = main.game.Player.selectedSlot;
-	const stack = main.game.Player.inventory.getStack(slot);
+	const slot = main.game.player.selectedSlot;
+	const stack = main.game.player.inventory.getStack(slot);
 	if (stack.item == .proceduralItem) {
 		if (!stack.item.proceduralItem.type.onUse().isNoop()) {
-			main.sync.client.executeCommand(.{ .useItem = .{ .source = main.game.Player.inventory.getInventoryAndSlot(slot), .target = main.game.Player.id, .useType = useType } });
+			main.sync.client.executeCommand(.{ .useItem = .{ .source = main.game.player.inventory.getInventoryAndSlot(slot), .target = main.game.player.id, .useType = useType } });
 			return true;
 		}
 	}

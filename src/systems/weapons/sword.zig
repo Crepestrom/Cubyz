@@ -54,14 +54,14 @@ pub const client = struct {
 		_ = playerPos;
 	}
 	fn animateHandObject() void {
-		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.Player.id) orelse false)) return;
+		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.player.id) orelse false)) return;
 		animateSwordSwing();
 		animateBlock();
 		animateBlockEnd();
 	}
 	fn animateSwordSwing() void {
-		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordSwing"))) return;
-		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.Player.id) orelse 0;
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.player.id).?.animationName orelse return == main.Tag.find("swordSwing"))) return;
+		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
 		const swingWidth: f32 = 3;
 		const horizontalMovement = (sampleQuadratic(@max(2*swingProgress - 1, 0)) - @min(sampleQuadratic(2*swingProgress), 1))*swingWidth;
 		const pos = Vec3d{horizontalMovement, 2.0, 0.0};
@@ -71,27 +71,27 @@ pub const client = struct {
 		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.5));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationY(0.5*std.math.pi));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationY(-0.5*std.math.pi*swingProgress));
-		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
 	}
 	fn animateBlock() void {
-		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
 		const pos = Vec3d{-1, 0.6, 0.0};
 		var modelMatrix = Mat4f.identity();
 
 		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.25));
-		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
 	}
 	pub fn animateBlockEnd() void {
-		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlockEnd"))) return;
-		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.Player.id) orelse 0;
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.player.id).?.animationName orelse return == main.Tag.find("swordBlockEnd"))) return;
+		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
 		const pos = Vec3d{-1 + swingProgress, 0.6, 0.0};
 		var modelMatrix = Mat4f.identity();
 
 		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationX(-std.math.pi*0.25));
 		modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.25*swingProgress));
-		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.Player.id, modelMatrix);
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
 	}
 	fn sampleQuadratic(inputValue: f32) f32 {
 		return std.math.clamp(inputValue*inputValue, 0, 1);
@@ -111,7 +111,7 @@ pub const client = struct {
 		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".client.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
+		if (!(@"cubyz:player_hand_animation".client.get(main.game.player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
 		@"cubyz:weapon_blocking".client.unload(givenEntity);
 	}
@@ -135,7 +135,7 @@ pub const server = struct {
 		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".server.get(main.game.Player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
+		if (!(@"cubyz:player_hand_animation".server.get(main.game.player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
 		std.log.debug("end block server", .{});
 		@"cubyz:weapon_blocking".server.unload(givenEntity);

@@ -120,5 +120,5 @@ pub fn execute(args: Args, source: Source) void {
 		},
 	};
 
-	if (!std.meta.eql(target.user.player().pos.*, pos)) main.network.protocols.genericUpdate.sendTPCoordinates(target.user.conn, pos);
+	if (!std.meta.eql(target.user.player().pos.*, pos)) main.network.protocols.generic_update.sendTPCoordinates(target.user.conn, pos);
 }

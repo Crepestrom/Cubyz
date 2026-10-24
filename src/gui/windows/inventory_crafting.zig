@@ -5,7 +5,7 @@ const items = main.items;
 const BaseItemIndex = items.BaseItemIndex;
 const ClientInventory = items.Inventory.ClientInventory;
 const ItemStack = items.ItemStack;
-const Player = main.game.Player;
+const Player = main.game.player;
 const Texture = main.graphics.Texture;
 const Vec2f = main.vec.Vec2f;
 

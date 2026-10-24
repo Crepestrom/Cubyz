@@ -8,7 +8,7 @@ const Item = items.Item;
 const ProceduralItem = items.ProceduralItem;
 const ProceduralItemType = items.ProceduralItemType;
 const ProceduralItemTypeIndex = items.ProceduralItemTypeIndex;
-const Player = main.game.Player;
+const Player = main.game.player;
 const Texture = main.graphics.Texture;
 const Vec2f = main.vec.Vec2f;
 

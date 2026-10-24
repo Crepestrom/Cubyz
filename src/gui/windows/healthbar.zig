@@ -47,11 +47,11 @@ pub fn deinit() void {
 pub fn render() void {
 	if (main.game.player.isCreative()) return;
 
-	const displayHealth = @max(0, @"cubyz:health".client.getPredictedHealth(main.game.Player.id) orelse 0.0);
+	const displayHealth = @max(0, @"cubyz:health".client.getPredictedHealth(main.game.player.id) orelse 0.0);
 	const halfHeartUnits: usize = @ceil(displayHealth*2);
 	const wholeHearts = halfHeartUnits/2;
 	const halfHeart = halfHeartUnits%2;
-	const totalHearts: usize = @ceil(@as(f32, @"cubyz:health".client.getPredictedMaxHealth(main.game.Player.id) orelse 0.0));
+	const totalHearts: usize = @ceil(@as(f32, @"cubyz:health".client.getPredictedMaxHealth(main.game.player.id) orelse 0.0));
 
 	var x: f32 = 0;
 	var y: f32 = 0;

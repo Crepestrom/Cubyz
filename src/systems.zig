@@ -66,31 +66,31 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		order: usize = 0,
 	};
 
-	pub fn getSortedOrder(comptime declarations: []const std.builtin.Type.Declaration, comptime subscribeFunctionName: []const u8, comptime addPhaseFunctionName: []const u8) []const std.builtin.Type.Declaration {
+	pub fn getSortedOrder(comptime declarationNames: []const [:0]const u8, comptime subscribeFunctionName: []const u8, comptime addPhaseFunctionName: []const u8) []const [:0]const u8 {
 		const startingArray: [0][]const u8 = .{};
 		var phaseNameIds: []const[]const u8 = &startingArray;
 		PhaseType.initPhaseTypes(&phaseNameIds);
-		const sortedPhases = sortPhases(declarations, &phaseNameIds, addPhaseFunctionName);
-		const functionSteps = getFunctionSteps(declarations, subscribeFunctionName);
+		const sortedPhases = sortPhases(declarationNames, &phaseNameIds, addPhaseFunctionName);
+		const functionSteps = getFunctionSteps(declarationNames, subscribeFunctionName);
 
-		var intermediary: [0]std.builtin.Type.Declaration = .{};
-		var sortedFunctionSteps: []const std.builtin.Type.Declaration = &intermediary;
+		var intermediary: [0][:0]const u8 = .{};
+		var sortedFunctionSteps: []const [:0]const u8 = &intermediary;
 		for (sortedPhases) |phase| {
 			for (functionSteps) |functionStep| {
 				if (PhaseType.fromFunctionStep(functionStep.targetPhase, &phaseNameIds) == PhaseType.fromFunctionStep(phase.self, &phaseNameIds)) {
-					addToDeclarationArray(&sortedFunctionSteps, declarations[functionStep.order]);
+					addToDeclarationArray(&sortedFunctionSteps, declarationNames[functionStep.order]);
 				}
 			}
 		}
 		return sortedFunctionSteps;
 	}
 
-	fn getFunctionSteps(comptime declarations: []const std.builtin.Type.Declaration, comptime subscribeFunctionName: []const u8) []const FunctionStep {
+	fn getFunctionSteps(comptime declarationNames: []const [:0]const u8, comptime subscribeFunctionName: []const u8) []const FunctionStep {
 		const startingList: [0]FunctionStep = .{};
 		var stepList: []const FunctionStep = &startingList;
-		for (declarations, 0..) |decl, i| {
-			if (@hasDecl(@field(systems, decl.name).server, subscribeFunctionName)) {
-				var newStep: FunctionStep = @field(@field(systems, decl.name).server, subscribeFunctionName)();
+		for (declarationNames, 0..) |decl_names, i| {
+			if (@hasDecl(@field(systems, decl_names).server, subscribeFunctionName)) {
+				var newStep: FunctionStep = @field(@field(systems, decl_names).server, subscribeFunctionName)();
 				newStep.order = i;
 				addToStepArray(&stepList, newStep);
 			} else {
@@ -100,14 +100,14 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		return stepList;
 	}
 
-	fn sortPhases(comptime declarations: []const std.builtin.Type.Declaration, phaseNameIds: *[]const[]const u8, comptime addPhaseFunctionName: []const u8) []const Phase {
-		const phaseList = getPhases(declarations, phaseNameIds, addPhaseFunctionName);
+	fn sortPhases(comptime declarationNames: []const [:0]const u8, phaseNameIds: *[]const[]const u8, comptime addPhaseFunctionName: []const u8) []const Phase {
+		const phaseList = getPhases(declarationNames, phaseNameIds, addPhaseFunctionName);
 		const ctx: SortContext = .{.phaseNameIds = phaseNameIds.*};
 		std.sort.insertion(Phase, phaseList, ctx, SortContext.lessThan);
 		return phaseList;
 	}
 
-	fn getPhases(comptime declarations: []const std.builtin.Type.Declaration, phaseNameIds: *[]const[]const u8, comptime addPhaseFunctionName: []const u8) []Phase {
+	fn getPhases(comptime declarationNames: []const [:0]const u8, phaseNameIds: *[]const[]const u8, comptime addPhaseFunctionName: []const u8) []Phase {
 		var startingList: [2]Phase = .{Phase{
 			.sortDirection = .before,
 			.self = "start",
@@ -121,9 +121,9 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 			.priority = std.math.minInt(i32),
 		}};
 		var phaseList: []Phase = &startingList;
-		for (declarations) |decl| {
-			if (@hasDecl(@field(systems, decl.name).server, addPhaseFunctionName)) {
-				const newPhase: Phase = @field(@field(systems, decl.name).server, addPhaseFunctionName)();
+		for (declarationNames) |decl| {
+			if (@hasDecl(@field(systems, decl).server, addPhaseFunctionName)) {
+				const newPhase: Phase = @field(@field(systems, decl).server, addPhaseFunctionName)();
 				_ = PhaseType.findFromName(newPhase.self, phaseNameIds);
 				addToPhaseArray(&phaseList, newPhase);
 			} else {
@@ -150,9 +150,9 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		phaseArray.* = &extraPhaseArray;
 	}
 
-	fn addToDeclarationArray(stepArray: *[]const std.builtin.Type.Declaration, addedStep: std.builtin.Type.Declaration) void {
-		const extraStepArray: [1]std.builtin.Type.Declaration = .{addedStep};
-		const translatedStepArray: []const std.builtin.Type.Declaration = &extraStepArray;
+	fn addToDeclarationArray(stepArray: *[]const [:0]const u8, addedStep: [:0]const u8) void {
+		const extraStepArray: [1][:0]const u8 = .{addedStep};
+		const translatedStepArray: []const [:0]const u8 = &extraStepArray;
 		const newArray = stepArray.*;
 		const newStepArray = newArray ++ translatedStepArray;
 		stepArray.* = newStepArray;
