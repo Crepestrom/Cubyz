@@ -484,7 +484,7 @@ pub const ClientItemDropManager = struct { // MARK: ClientItemDropManager
 };
 
 // Going to handle item animations and other things like - bobbing, interpolation, movement reactions
-pub const ItemDisplayManager = struct { // MARK: ItemDisplayManager
+pub const item_display_manager = struct { // MARK: item_display_manager
 	pub var showItem: bool = true;
 	var cameraFollow: Vec3f = @splat(0);
 	var cameraFollowVel: Vec3f = @splat(0);
@@ -494,7 +494,7 @@ pub const ItemDisplayManager = struct { // MARK: ItemDisplayManager
 		if (deltaTime == 0) return;
 		const dt: f32 = @floatCast(deltaTime);
 
-		var playerVel: Vec3f = .{@floatCast((game.Player.super.vel[2]*0.009 + game.Player.eye.vel[2]*0.0075)), 0, 0};
+		var playerVel: Vec3f = .{@floatCast((game.player.super.vel[2]*0.009 + game.player.eye.vel[2]*0.0075)), 0, 0};
 		playerVel = vec.clampMag(playerVel, 0.32);
 
 		// TODO: add *smooth* item sway
@@ -506,7 +506,7 @@ pub const ItemDisplayManager = struct { // MARK: ItemDisplayManager
 	}
 };
 
-pub const ItemDropRenderer = struct { // MARK: ItemDropRenderer
+pub const item_drop_renderer = struct { // MARK: item_drop_renderer
 	var itemPipeline: graphics.Pipeline = undefined;
 	var itemUniforms: struct {
 		modelMatrix: c_int,
@@ -554,13 +554,13 @@ pub const ItemDropRenderer = struct { // MARK: ItemDropRenderer
 				defer data.deinit();
 				for (model.internalQuads) |quad| {
 					const textureIndex = blocks.meshes.textureIndex(block, quad.quadInfo().textureSlot);
-					data.append(@as(u32, @intFromEnum(quad)) << 16 | textureIndex); // modelAndTexture
+					data.append(@as(u32, @backingInt(quad)) << 16 | textureIndex); // modelAndTexture
 					data.append(0); // offsetByNormal
 				}
 				for (model.neighborFacingQuads) |list| {
 					for (list) |quad| {
 						const textureIndex = blocks.meshes.textureIndex(block, quad.quadInfo().textureSlot);
-						data.append(@as(u32, @intFromEnum(quad)) << 16 | textureIndex); // modelAndTexture
+						data.append(@as(u32, @backingInt(quad)) << 16 | textureIndex); // modelAndTexture
 						data.append(1); // offsetByNormal
 					}
 				}
@@ -727,7 +727,7 @@ pub const ItemDropRenderer = struct { // MARK: ItemDropRenderer
 	}
 
 	pub fn renderDisplayItems(ambientLight: Vec3f, playerPos: Vec3d) void {
-		if (!ItemDisplayManager.showItem) return;
+		if (!item_display_manager.showItem) return;
 
 		const displayItemUbo = graphics.frame_uniforms.StaticUbo.init(.{
 			.projectionMatrix = Mat4f.perspective(std.math.degreesToRadians(65), @as(f32, @floatFromInt(main.renderer.lastWidth))/@as(f32, @floatFromInt(main.renderer.lastHeight)), 0.01, 3).toGl(),
@@ -740,10 +740,10 @@ pub const ItemDropRenderer = struct { // MARK: ItemDropRenderer
 		defer displayItemUbo.unbind();
 		bindCommonUniforms(ambientLight);
 
-		const item = game.Player.inventory.getItem(game.Player.selectedSlot);
+		const item = game.player.inventory.getItem(game.player.selectedSlot);
 		if (item != .null) {
 			var pos: Vec3d = Vec3d{0, 0, 0};
-			const rot: Vec3f = ItemDisplayManager.cameraFollow;
+			const rot: Vec3f = item_display_manager.cameraFollow;
 
 			const lightPos = @as(Vec3d, @floatCast(playerPos)) - @as(Vec3f, @splat(0.5));
 			const blockPos: Vec3i = @floor(lightPos);

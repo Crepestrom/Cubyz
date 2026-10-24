@@ -84,7 +84,7 @@ pub const client = struct { // MARK: client
 
 		mutex.lock();
 		defer mutex.unlock();
-		cmd.do(main.globalAllocator, .client, null, main.game.Player.gamemode.raw) catch unreachable;
+		cmd.do(main.globalAllocator, .client, null, main.game.player.gamemode.raw) catch unreachable;
 		const data = cmd.serializePayload(main.stackAllocator);
 		defer main.stackAllocator.free(data);
 		main.network.protocols.inventory.sendCommand(main.game.world.?.conn, cmd.payload, data);
@@ -119,7 +119,7 @@ pub const client = struct { // MARK: client
 				.confirmation => {
 					if (tempData.popOrNull()) |_cmd| {
 						var cmd = _cmd;
-						cmd.do(main.globalAllocator, .client, null, main.game.Player.gamemode.raw) catch unreachable;
+						cmd.do(main.globalAllocator, .client, null, main.game.player.gamemode.raw) catch unreachable;
 						try cmd.finalize(main.globalAllocator, .client, &reader);
 					} else {
 						std.log.err("Received unexpected confirmation sync. Disconnecting", .{});
@@ -143,7 +143,7 @@ pub const client = struct { // MARK: client
 
 		while (tempData.popOrNull()) |_cmd| {
 			var cmd = _cmd;
-			cmd.do(main.globalAllocator, .client, null, main.game.Player.gamemode.raw) catch unreachable;
+			cmd.do(main.globalAllocator, .client, null, main.game.player.gamemode.raw) catch unreachable;
 			commands.pushBack(cmd);
 		}
 	}
@@ -151,7 +151,7 @@ pub const client = struct { // MARK: client
 	fn setGamemode(gamemode: Gamemode) void {
 		mutex.lock();
 		defer mutex.unlock();
-		main.game.Player.setGamemode(gamemode);
+		main.game.player.setGamemode(gamemode);
 		var tempData: main.List(Command) = .empty;
 		defer tempData.deinit(main.stackAllocator);
 		while (commands.popBack()) |_cmd| {
@@ -247,7 +247,7 @@ pub const server = struct { // MARK: server
 	fn setGamemode(user: *main.server.User, gamemode: Gamemode) void {
 		threadContext.assertCorrectContext(.server);
 		user.gamemode.store(gamemode, .monotonic);
-		main.network.protocols.genericUpdate.sendGamemode(user.conn, gamemode);
+		main.network.protocols.generic_update.sendGamemode(user.conn, gamemode);
 	}
 };
 
@@ -451,7 +451,7 @@ pub const Command = struct { // MARK: Command
 					durability.inv.inv.update();
 				},
 				.kill => |kill| {
-					main.game.Player.kill(kill.spawnPoint);
+					main.game.player.kill(kill.spawnPoint);
 				},
 				.rotation => |rotation| {
 					main.game.camera.rotation = rotation.rotation;
@@ -1357,7 +1357,7 @@ pub const Command = struct { // MARK: Command
 		fn run(self: MoveToPlayerBag, ctx: Context) error{serverFailure}!void {
 			std.debug.assert(ctx.side == .client or ctx.user != null);
 			const bag = switch (ctx.side) {
-				.client => @"cubyz:bag".client.getBag(main.game.Player.id).?,
+				.client => @"cubyz:bag".client.getBag(main.game.player.id).?,
 				.server => @"cubyz:bag".server.getBag((ctx.user orelse return error.serverFailure).id) orelse return error.serverFailure,
 			};
 			ctx.execute(.{.moveToBag = .{.dest = bag, .source = self.source, .amount = self.amount}});
@@ -1394,7 +1394,7 @@ pub const Command = struct { // MARK: Command
 		fn run(self: TakeFromPlayerBag, ctx: Context) error{serverFailure}!void {
 			std.debug.assert(ctx.side == .client or ctx.user != null);
 			const bag = switch (ctx.side) {
-				.client => @"cubyz:bag".client.getBag(main.game.Player.id).?,
+				.client => @"cubyz:bag".client.getBag(main.game.player.id).?,
 				.server => @"cubyz:bag".server.getBag((ctx.user orelse return error.serverFailure).id) orelse return error.serverFailure,
 			};
 			var amount: u16 = 0;
@@ -1583,7 +1583,7 @@ pub const Command = struct { // MARK: Command
 					defer writer.deinit();
 
 					const actualBlock = main.server.world.?.getBlockAndBlockEntityData(pos[0], pos[1], pos[2], &writer) orelse return;
-					main.network.protocols.blockUpdate.send(ctx.user.?.conn, &.{.init(pos, actualBlock, writer.data.items)});
+					main.network.protocols.block_update.send(ctx.user.?.conn, &.{.init(pos, actualBlock, writer.data.items)});
 				}
 				return;
 			}
@@ -1595,7 +1595,7 @@ pub const Command = struct { // MARK: Command
 					defer writer.deinit();
 
 					const actualBlock = main.server.world.?.getBlockAndBlockEntityData(pos[0], pos[1], pos[2], &writer) orelse return;
-					main.network.protocols.blockUpdate.send(ctx.user.?.conn, &.{.init(pos, actualBlock, writer.data.items)});
+					main.network.protocols.block_update.send(ctx.user.?.conn, &.{.init(pos, actualBlock, writer.data.items)});
 					return error.serverFailure;
 				}
 			}
@@ -1675,7 +1675,7 @@ pub const Command = struct { // MARK: Command
 
 				if (target.?.gamemode.raw == .creative) return;
 			} else {
-				if (main.game.Player.gamemode.raw == .creative) return;
+				if (main.game.player.gamemode.raw == .creative) return;
 			}
 
 			ctx.execute(.{.addHealth = .{

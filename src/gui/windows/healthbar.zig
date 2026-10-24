@@ -45,7 +45,7 @@ pub fn deinit() void {
 }
 
 pub fn render() void {
-	if (main.game.Player.isCreative()) return;
+	if (main.game.player.isCreative()) return;
 
 	const displayHealth = @max(0, @"cubyz:health".client.getPredictedHealth(main.game.Player.id) orelse 0.0);
 	const halfHeartUnits: usize = @ceil(displayHealth*2);

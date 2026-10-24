@@ -48,7 +48,7 @@ pub fn save(self: *const @This(), allocator: NeverFailingAllocator, audience: ma
 	const zon = ZonElement.initObject(allocator);
 	zon.put("velocity", self.vel);
 	zon.put("rotation", self.rot);
-	zon.put("id", @intFromEnum(self.id));
+	zon.put("id", @backingInt(self.id));
 
 	var base64 = main.entity.server.componentsToBase64(allocator, self.id, audience);
 	defer base64.deinit(allocator);

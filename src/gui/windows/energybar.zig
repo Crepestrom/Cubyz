@@ -45,7 +45,7 @@ pub fn deinit() void {
 }
 
 pub fn render() void {
-	if (main.game.Player.isCreative()) return;
+	if (main.game.player.isCreative()) return;
 
 	var y: f32 = 0;
 	var x: f32 = 0;
