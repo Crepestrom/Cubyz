@@ -214,6 +214,7 @@ pub const launch_config = struct {
 	pub var autoEnterWorld: []const u8 = "";
 	pub var headlessServer: bool = false;
 	pub var preferredAuthenticationAlgorithm: main.network.authentication.KeyTypeEnum = .ed25519;
+	pub var threadPoolThreads: ?u64 = null;
 
 	pub var vulkanTestingMode: bool = false;
 
