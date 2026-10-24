@@ -81,4 +81,9 @@ pub const server = struct {
 			functionApplied(id);
 		}
 	}
+	pub fn onUpdate() void {
+		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items, 0..) |_, id, i| {
+			std.log.debug("{} {}", .{id, i});
+		}
+	}
 };
