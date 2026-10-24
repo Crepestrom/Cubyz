@@ -132,8 +132,7 @@ pub fn deinit() void {
 
 fn initReflectionCubeMap() void {
 	c.glViewport(0, 0, reflectionCubeMapSize, reflectionCubeMapSize);
-	var framebuffer: graphics.FrameBuffer = undefined;
-	framebuffer.init(false, c.GL_LINEAR, c.GL_CLAMP_TO_EDGE);
+	var framebuffer: graphics.FrameBuffer = .init(0, 0, c.GL_RGBA8, false, .linear, .clampToEdge);
 	defer framebuffer.deinit();
 	framebuffer.bind();
 	fakeReflectionPipeline.bind(null);
@@ -413,8 +412,8 @@ const bloom = struct { // MARK: bloom
 	} = undefined;
 
 	pub fn init() void {
-		buffer1.init(false, c.GL_LINEAR, c.GL_CLAMP_TO_EDGE);
-		buffer2.init(false, c.GL_LINEAR, c.GL_CLAMP_TO_EDGE);
+		buffer1 = .init(0, 0, c.GL_R11F_G11F_B10F, false, .linear, .clampToEdge);
+		buffer2 = .init(0, 0, c.GL_R11F_G11F_B10F, false, .linear, .clampToEdge);
 		emptyBuffer = .init();
 		emptyBuffer.generate(graphics.Image.emptyImage);
 		firstPassPipeline = graphics.Pipeline.init(
@@ -511,9 +510,11 @@ const bloom = struct { // MARK: bloom
 		if (width != currentWidth or height != currentHeight) {
 			width = currentWidth;
 			height = currentHeight;
-			buffer1.updateSize(width/4, height/4, c.GL_R11F_G11F_B10F);
+			buffer1.deinit();
+			buffer1 = .init(width/4, height/4, c.GL_R11F_G11F_B10F, false, .linear, .clampToEdge);
 			std.debug.assert(buffer1.validate());
-			buffer2.updateSize(width/4, height/4, c.GL_R11F_G11F_B10F);
+			buffer2.deinit();
+			buffer2 = .init(width/4, height/4, c.GL_R11F_G11F_B10F, false, .linear, .clampToEdge);
 			std.debug.assert(buffer2.validate());
 		}
 		gpu_performance_measuring.startQuery(.bloom_extract_downsample);
@@ -704,10 +705,8 @@ pub const menu_background = struct { // MARK: menu_background
 		main.settings.resolutionScale = oldResolutionScale;
 		defer updateViewport(Window.width, Window.height);
 
-		var buffer: graphics.FrameBuffer = undefined;
-		buffer.init(true, c.GL_NEAREST, c.GL_REPEAT);
+		var buffer: graphics.FrameBuffer = .init(size, size, c.GL_RGBA8, false, .nearest, .repeat);
 		defer buffer.deinit();
-		buffer.updateSize(size, size, c.GL_RGBA8);
 
 		activeFrameBuffer = buffer.frameBuffer;
 		defer activeFrameBuffer = 0;
@@ -1175,11 +1174,11 @@ pub const mesh_selection = struct { // MARK: mesh_selection
 		};
 
 		if (selectedBlockPos) |selectedPos| {
-			const stack = inventory.getStack(slot);
 			const breaking = main.entity.components.@"cubyz:breaking".client.get(main.game.player.id) orelse blk: {
 				main.entity.components.@"cubyz:breaking".client.put(main.game.player.id, selectedPos);
 				break :blk main.entity.components.@"cubyz:breaking".client.get(main.game.player.id).?;
 			};
+			const stack = inventory.getStack(slot);
 			const isSelectionWand = stack.item == .baseItem and std.mem.eql(u8, stack.item.baseItem.id(), "cubyz:selection_wand");
 			if (isSelectionWand) {
 				game.player.selectionPosition1 = selectedPos;

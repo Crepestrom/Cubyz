@@ -647,7 +647,7 @@ pub fn update(deltaTime: f64) void { // MARK: update()
 		return;
 	};
 
-	physics.calculateVolumeProperties(.client, &player.volumeProperties, player.super.pos, player.outerBoundingBox, physics.playerAirTerminalVelocity);
+	physics.calculateVolumeProperties(.client, &player.volumeProperties, player.super.pos.*, player.outerBoundingBox, physics.playerAirTerminalVelocity);
 	if (player.isFlying.load(.monotonic)) {
 		player.friction = .{.current = 20, .mobile = 20};
 	} else {
