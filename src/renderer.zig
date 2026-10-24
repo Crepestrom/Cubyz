@@ -164,7 +164,8 @@ pub fn updateViewport(width: u31, height: u31) void {
 	lastWidth = @trunc(@as(f32, @floatFromInt(width))*main.settings.resolutionScale);
 	lastHeight = @trunc(@as(f32, @floatFromInt(height))*main.settings.resolutionScale);
 	game.projectionMatrix = Mat4f.perspective(std.math.degreesToRadians(lastFov), @as(f32, @floatFromInt(lastWidth))/@as(f32, @floatFromInt(lastHeight)), zNear, zFar);
-	worldFrameBuffer.updateSize(lastWidth, lastHeight, c.GL_RGB16F);
+	worldFrameBuffer.deinit();
+	worldFrameBuffer = .init(lastWidth, lastHeight, c.GL_RGBA16F, true, .nearest, .clampToEdge);
 	worldFrameBuffer.unbind();
 }
 
