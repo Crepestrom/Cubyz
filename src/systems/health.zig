@@ -59,7 +59,7 @@ pub const server = struct {
 		const onEventFunctionName: []const u8 = "onAddHealth";
 		const subscribeFunctionName: []const u8 = "addHealthEventSubscribe";
 		const addPhaseFunctionName: []const u8 = "addHealthEventAddPhase";
-		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decls, subscribeFunctionName, addPhaseFunctionName);
+		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"structdecl_names, subscribeFunctionName, addPhaseFunctionName);
 		inline for (sortedTypes) |decl| {
 			if (@hasDecl(@field(systems.systems, decl.name).server, onEventFunctionName)) {
 				@field(@field(systems.systems, decl.name).server, onEventFunctionName)();
