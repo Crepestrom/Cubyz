@@ -72,11 +72,11 @@ pub const server = struct {
 			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
 			const relativePos: Vec3d = @abs(position - (component.offset + (main.entity.components.@"cubyz:position".server.getPosition(id) orelse continue)));
 			std.log.debug("testing position {} {} {}", .{combinedBoundingBox, relativePos, i});
-			if (combinedBoundingBox[0] < relativePos[0]) return;
-			if (combinedBoundingBox[1] < relativePos[1]) return;
-			if (combinedBoundingBox[2] < relativePos[2]) return;
+			if (combinedBoundingBox[0] < relativePos[0]) continue;
+			if (combinedBoundingBox[1] < relativePos[1]) continue;
+			if (combinedBoundingBox[2] < relativePos[2]) continue;
 			std.log.debug("close enough to do damage", .{});
-			if (options.ignoreSelf != null) {if (options.ignoreSelf.? == id) return;}
+			if (options.ignoreSelf != null) {if (options.ignoreSelf.? == id) continue;}
 			std.log.debug("did damage", .{});
 			functionApplied(id);
 		}
