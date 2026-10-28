@@ -827,7 +827,7 @@ pub const item_drop_renderer = struct { // MARK: item_drop_renderer
 	}
 
 	fn isPlayingCustomAnimation() bool {
-		return @"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.player.id) orelse false;
+		return @"cubyz:player_hand_animation".client.isPlayingAnyAnimation(main.game.player.id) orelse false;
 	}
 	fn getCustomAnimation() Mat4f {
 		return @"cubyz:player_hand_animation".client.getAnimationMatrix(main.game.player.id) orelse Mat4f.identity();

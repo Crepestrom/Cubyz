@@ -54,7 +54,7 @@ pub const client = struct {
 		_ = playerPos;
 	}
 	fn animateHandObject() void {
-		if (!(@"cubyz:player_hand_animation".client.isPlayingAnimation(main.game.player.id) orelse false)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnyAnimation(main.game.player.id) orelse false)) return;
 		animateSwordSwing();
 		animateBlock();
 		animateBlockEnd();
@@ -101,11 +101,11 @@ pub const client = struct {
 	}
 
 	pub fn swingSword(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
 	}
 	pub fn block(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".client.find(givenEntity);
 		blockComponent.*.blockingPower = 0.5;
@@ -122,13 +122,13 @@ pub const server = struct {
 	pub fn deinit() void {}
 	
 	pub fn swingSword(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		std.log.debug("swing sword on server", .{});
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
 		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 10, dealDamage, .{ .ignoreSelf = givenEntity });
 	}
 	pub fn block(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".server.isPlayingAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
 		std.log.debug("start block server", .{});

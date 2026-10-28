@@ -36,8 +36,36 @@ pub const animationInfo = struct {
 	animationLength: i64 = 0, // stored in deciseconds
 	overwritable: bool = true,
 	loop: bool = false,
-	onAnimationEnd: ?*const fn (entity: Entity, animationName: main.Tag) void = null,
+	onAnimationEnd: ?*const fn (entity: Entity) void = null,
 };
+
+pub fn setAnimation(entity: Entity, attemptedAnimation: animationInfo) void {
+	switch (main.sync.threadContext) {
+		.client => client.setPredictedAnimation(entity, attemptedAnimation),
+		.server => server.setAnimation(entity, attemptedAnimation),
+		else => std.log.debug("Should only run on a server or client thread", .{})
+	}
+}
+pub fn isPlayingAnyAnimation(entity: Entity) ?bool {
+	return switch (main.sync.threadContext) {
+		.client => client.isPlayingAnyAnimation(entity),
+		.server => server.isPlayingAnyAnimation(entity),
+		else => {
+			std.log.debug("Should only run on a server or client thread", .{});
+			return null;
+		},
+	};
+}
+pub fn isPlayingAnimation(entity: Entity, animation: main.Tag) ?bool {
+	return switch (main.sync.threadContext) {
+		.client => client.isPlayingAnimation(entity, animation),
+		.server => server.isPlayingAnimation(entity, animation),
+		else => {
+			std.log.debug("Should only run on a server or client thread", .{});
+			return null;
+		},
+	};
+}
 
 // ############################# Client only stuff ################################
 pub const client = struct {
@@ -103,6 +131,7 @@ pub const client = struct {
 			animationComponent.endTime = attemptedAnimation.animationLength + game.world.?.gameTime.load(.monotonic);
 			animationComponent.overwritable = attemptedAnimation.overwritable;
 			animationComponent.loop = attemptedAnimation.loop;
+			if (attemptedAnimation.onAnimationEnd != null) std.log.err("Cannot have OnAnimationEnd on client player_hand_animation component", .{});
 		}
 	}
 	pub fn setAnimationMatrix(entity: Entity, givenMatrix: Mat4f) void {
@@ -121,9 +150,14 @@ pub const client = struct {
 		if (animationComponent.animationName == null) return null;
 		return animationComponent.handMatrix;
 	}
-	pub fn isPlayingAnimation(entity: Entity) ?bool {
+	pub fn isPlayingAnyAnimation(entity: Entity) ?bool {
 		const animationComponent  = components.get(entity) orelse return null;
 		if (animationComponent.animationName == null) return false;
+		return true;
+	}
+	pub fn isPlayingAnimation(entity: Entity, animation: main.Tag) ?bool {
+		const animationComponent  = components.get(entity) orelse return null;
+		if (animationComponent.animationName != animation) return false;
 		return true;
 	}
 };
@@ -136,7 +170,7 @@ pub const server = struct {
 		endTime: i64,
 		overwritable: bool = true,
 		loop: bool = false,
-		onAnimationEnd: ?*const fn (entity: Entity, animationName: main.Tag) void = null,
+		onAnimationEnd: ?*const fn (entity: Entity) void = null,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
 			writer.writeBool(self.animationName != null);
@@ -151,10 +185,11 @@ pub const server = struct {
 			if (self.endTime < main.server.world.?.gameTime) {
 				if (self.loop) {
 					self.endTime = main.server.world.?.gameTime + self.length;
-					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity, self.animationName.?);
+					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity);
 				} else {
+					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity);
 					self.animationName = null;
-					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity, self.animationName.?);
+					self.onAnimationEnd = null;
 				}
 			}
 		}
@@ -195,11 +230,17 @@ pub const server = struct {
 			animationComponent.endTime = attemptedAnimation.animationLength + main.server.world.?.gameTime;
 			animationComponent.overwritable = attemptedAnimation.overwritable;
 			animationComponent.loop = attemptedAnimation.loop;
+			animationComponent.onAnimationEnd = attemptedAnimation.onAnimationEnd;
 		}
 	}
-	pub fn isPlayingAnimation(entity: Entity) ?bool {
+	pub fn isPlayingAnyAnimation(entity: Entity) ?bool {
 		const animationComponent  = components.get(entity) orelse return null;
 		if (animationComponent.animationName == null) return false;
+		return true;
+	}
+	pub fn isPlayingAnimation(entity: Entity, animation: main.Tag) ?bool {
+		const animationComponent  = components.get(entity) orelse return null;
+		if (animationComponent.animationName != animation) return false;
 		return true;
 	}
 };
