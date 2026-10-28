@@ -148,14 +148,15 @@ pub const server = struct {
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullCharged"), .animationLength = 2, .loop = true});
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {
-		std.log.debug("released the swing", .{});
+		std.log.debug("released the swing 1 {}", .{@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName});
 		if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceWindup")) {
 			std.log.debug("small swing", .{});
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 5});
 		} else if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceFullCharged")) {
-			std.log.debug("small swing", .{});
+			std.log.debug("big swing", .{});
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullSwing"), .animationLength = 5});
 		}
+		std.log.debug("released the swing 2 {}", .{@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName});
 	}
 
 	pub fn block(givenEntity: Entity) void {
