@@ -137,17 +137,18 @@ pub const server = struct {
 
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".server.isPlayingAnyAnimation(givenEntity) orelse true) return;
-		std.log.debug("swing sword on server", .{});
+		std.log.debug("start swing mace on server", .{});
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSwing"), .animationLength = 10});
 		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 10, dealDamage, .{ .ignoreSelf = givenEntity });
 		std.log.debug("testing", .{});
 	}
 	fn chargedSwing(givenEntity: Entity) void {
 		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceWindup")) orelse return)) return;
-
+		std.log.debug("fully charge strike", .{});
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullCharged"), .animationLength = 2, .loop = true});
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {
+		std.log.debug("released the swing", .{});
 		if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceWindup")) {
 			std.log.debug("small swing", .{});
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 5});

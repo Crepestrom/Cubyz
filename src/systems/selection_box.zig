@@ -68,16 +68,13 @@ pub const server = struct {
 		}
 	}
 	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void, options: SelectionOptions) void {
-		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items, 0..) |component, id, i| {
+		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
 			const relativePos: Vec3d = @abs(position - (component.offset + (main.entity.components.@"cubyz:position".server.getPosition(id) orelse continue)));
-			std.log.debug("testing position {} {} {}", .{combinedBoundingBox, relativePos, i});
 			if (combinedBoundingBox[0] < relativePos[0]) continue;
 			if (combinedBoundingBox[1] < relativePos[1]) continue;
 			if (combinedBoundingBox[2] < relativePos[2]) continue;
-			std.log.debug("close enough to do damage", .{});
 			if (options.ignoreSelf != null) {if (options.ignoreSelf.? == id) continue;}
-			std.log.debug("did damage", .{});
 			functionApplied(id);
 		}
 	}
