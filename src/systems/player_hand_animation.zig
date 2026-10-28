@@ -63,8 +63,8 @@ pub const server = struct {
 	}
 
 	pub fn onUpdate() void {
-		for (@"cubyz:player_hand_animation".server.components.dense.items) |*component| {
-			component.updateAnimation();
+		for (@"cubyz:player_hand_animation".server.components.dense.items, entity.components.@"cubyz:player_hand_animation".server.components.denseToSparseIndex.items) |*component, id| {
+			component.updateAnimation(id);
 		}
 	}
 };

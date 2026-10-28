@@ -36,6 +36,7 @@ pub const animationInfo = struct {
 	animationLength: i64 = 0, // stored in deciseconds
 	overwritable: bool = true,
 	loop: bool = false,
+	onAnimationEnd: ?*const fn (entity: Entity, animationName: main.Tag) void = null,
 };
 
 // ############################# Client only stuff ################################
@@ -135,6 +136,7 @@ pub const server = struct {
 		endTime: i64,
 		overwritable: bool = true,
 		loop: bool = false,
+		onAnimationEnd: ?*const fn (entity: Entity, animationName: main.Tag) void = null,
 		pub fn save(self: *Component, writer: *utils.BinaryWriter, audience: main.entity.AudienceInfo) main.entity.ComponentSaveBehaviour {
 			_ = audience;
 			writer.writeBool(self.animationName != null);
@@ -145,12 +147,14 @@ pub const server = struct {
 			writer.writeBool(self.loop);
 			return .save;
 		}
-		pub fn updateAnimation(self: *Component) void {
+		pub fn updateAnimation(self: *Component, entity: Entity) void {
 			if (self.endTime < main.server.world.?.gameTime) {
 				if (self.loop) {
 					self.endTime = main.server.world.?.gameTime + self.length;
+					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity, self.animationName.?);
 				} else {
 					self.animationName = null;
+					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity, self.animationName.?);
 				}
 			}
 		}

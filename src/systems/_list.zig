@@ -10,4 +10,4 @@ pub const selection_box = @import("selection_box.zig");
 pub const player_hand_animation = @import("player_hand_animation.zig");
 pub const weapon_blocking = @import("weapon_blocking.zig");
 
-pub const sword = @import("weapons/sword.zig");
+pub const weapons = @import("weapons/_list.zig");

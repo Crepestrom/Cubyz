@@ -26,7 +26,7 @@ pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.c
 		switch (params.useType) {
 			.normal => main.systems.systems.mace.server.startSwing(params.entity),
 			.alt => main.systems.systems.mace.server.block(params.entity),
-			.normalEnd => main.systems.systems.mace.client.releaseSwing(params.entity),
+			.normalEnd => main.systems.systems.mace.server.releaseSwing(params.entity),
 			.altEnd => main.systems.systems.mace.server.blockEnd(params.entity),
 		}
 	}
