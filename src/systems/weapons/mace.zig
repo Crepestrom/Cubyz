@@ -165,7 +165,7 @@ pub const server = struct {
 		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceBlock")))) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceBlock")) orelse true)) return;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
 		std.log.debug("end block server", .{});
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
