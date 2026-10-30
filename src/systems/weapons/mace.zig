@@ -57,21 +57,63 @@ pub const client = struct {
 	fn animateHandObject() void {
 		if (!(@"cubyz:player_hand_animation".isPlayingAnyAnimation(main.game.player.id) orelse false)) return;
 
-		animateSwordSwing();
+		animateSwingWindup();
+		animateFullCharged();
 		animateBlock();
 		animateBlockEnd();
+		animateSmallSwing();
+		animateFullSwing();
 	}
-	fn animateSwordSwing() void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceBlock")) orelse return)) return;
+	fn animateSwingWindup() void {
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceWindup")) orelse return)) return;
 
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
-		const swingWidth: f32 = 3;
-		const horizontalMovement = (sampleQuadratic(swingProgress) - @min(sampleQuadratic(2*swingProgress), 1))*swingWidth;
-		const pos = Vec3d{horizontalMovement, 2.0, 0.0};
+		const horizontalMovement = sampleQuadratic(swingProgress);
+		const pos = Vec3d{0.4, 1.45, -0.3 + horizontalMovement*1.2};
 		var modelMatrix = Mat4f.identity();
 
 		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
-		modelMatrix = modelMatrix.mul(Mat4f.rotationY(-0.5*std.math.pi*horizontalMovement));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.25 + 0.3*std.math.pi*horizontalMovement));
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
+	}
+	fn animateFullCharged() void {
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceFullCharged")) orelse return)) return;
+
+		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
+		const pos = Vec3d{0.4, 1.45, 0.9};
+		var modelMatrix = Mat4f.identity();
+
+		modelMatrix = modelMatrix.mul(Mat4f.scale(@splat(1 + swingProgress*0.3)));
+		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.55));
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
+	}
+
+	fn animateSmallSwing() void {
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceSmallSwing")) orelse return)) return;
+
+		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
+		const pos = Vec3d{0.4, 1.45 + swingProgress*0.5, 0.6 - swingProgress*1.5};
+		var modelMatrix = Mat4f.identity();
+
+		modelMatrix = modelMatrix.mul(Mat4f.scale(@splat(1.2)));
+		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.50 - swingProgress*1.6));
+		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
+	}
+	fn animateFullSwing() void {
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceFullSwing")) orelse return)) return;
+		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
+		const pos = Vec3d{0.4, 1.45 + swingProgress*0.5, 0.9 - swingProgress*2};
+		var modelMatrix = Mat4f.identity();
+
+		modelMatrix = modelMatrix.mul(Mat4f.scale(@splat(1.5)));
+		modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
+		modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.55 - swingProgress*1.8));
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
 	}
 
@@ -107,13 +149,18 @@ pub const client = struct {
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) return;
 
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceWindup"), .animationLength = 10});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing});
+	}
+	fn chargedSwing(givenEntity: Entity) void {
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceWindup")) orelse return)) return;
+		std.log.debug("fully charge strike on client", .{});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullCharged"), .animationLength = 2, .loop = true});
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceWindup")) {
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 5});
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 3});
 		} else if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceFullCharged")) {
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullSwing"), .animationLength = 5});
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullSwing"), .animationLength = 3});
 		}
 	}
 	pub fn block(givenEntity: Entity) void {
@@ -132,44 +179,55 @@ pub const client = struct {
 };
 // ############################# Server only stuff ################################
 pub const server = struct {
-	pub fn init() void {}
+	const animations = struct {
+		var maceWindup: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var maceFullCharged: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var maceSmallSwing: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var maceFullSwing: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var maceBlock: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var maceBlockEnd: @"cubyz:player_hand_animation".animationInfo = undefined;
+	};
+
+	pub fn init() void {
+		animations.maceWindup = .{.animationName = main.Tag.find("maceWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing};
+		animations.maceFullCharged = .{.animationName = main.Tag.find("maceFullCharged"), .animationLength = 2, .loop = true};
+		animations.maceSmallSwing = .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 3};
+		animations.maceFullSwing = .{.animationName = main.Tag.find("maceFullSwing"), .animationLength = 3};
+		animations.maceBlock = .{.animationName = main.Tag.find("maceBlock"), .animationLength = 1, .loop = true};
+		animations.maceBlockEnd = .{.animationName = main.Tag.find("maceBlockEnd"), .animationLength = 5};
+	}
 	pub fn deinit() void {}
 
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".server.isPlayingAnyAnimation(givenEntity) orelse true) return;
-		std.log.debug("start swing mace on server", .{});
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSwing"), .animationLength = 10});
-		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 10, dealDamage, .{ .ignoreSelf = givenEntity });
-		std.log.debug("testing", .{});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceWindup);
 	}
 	fn chargedSwing(givenEntity: Entity) void {
 		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceWindup")) orelse return)) return;
 		std.log.debug("fully charge strike", .{});
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullCharged"), .animationLength = 2, .loop = true});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceFullCharged);
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {
-		std.log.debug("released the swing 1 {}", .{@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName});
-		if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceWindup")) {
-			std.log.debug("small swing", .{});
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 5});
-		} else if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceFullCharged")) {
-			std.log.debug("big swing", .{});
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullSwing"), .animationLength = 5});
+		std.log.debug("released the swing 1 {} {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName, main.Tag.find("maceWindup")});
+		if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("maceWindup")) {
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceSmallSwing);
+			systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 2, dealDamage, .{ .ignoreSelf = givenEntity });
+		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("maceFullCharged")) {
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceFullSwing);
+			systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage, .{ .ignoreSelf = givenEntity });
 		}
-		std.log.debug("released the swing 2 {}", .{@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName});
+		std.log.debug("released the swing 2 {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName});
 	}
 
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceBlock"), .animationLength = 1, .loop = true});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceBlock);
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
-		std.log.debug("start block server", .{});
 		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
 		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceBlock")) orelse true)) return;
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
-		std.log.debug("end block server", .{});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceBlockEnd);
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 

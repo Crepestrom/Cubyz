@@ -44,8 +44,8 @@ pub const client = struct {
 		_ = ambientLight;
 		_ = playerPos;
 		_ = deltaTime;
-		for (@"cubyz:player_hand_animation".client.components.dense.items) |*component| {
-			component.updateAnimation();
+		for (@"cubyz:player_hand_animation".client.components.dense.items, entity.components.@"cubyz:player_hand_animation".client.components.denseToSparseIndex.items) |*component, id| {
+			component.updateAnimation(id);
 		}
 	}
 	pub fn renderHud(ambientLight: Vec3f, playerPos: Vec3d) void {

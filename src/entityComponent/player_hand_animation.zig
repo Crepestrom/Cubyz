@@ -76,12 +76,19 @@ pub const client = struct {
 		handMatrix: Mat4f,
 		overwritable: bool = true,
 		loop: bool = false,
-		pub fn updateAnimation(self: *Component) void {
-			if (self.endTime < game.world.?.gameTime.load(.monotonic)) {
+		onAnimationEnd: ?*const fn (entity: Entity) void = null,
+		pub fn updateAnimation(self: *Component, entity: Entity) void {
+			if (self.endTime < main.server.world.?.gameTime) {
 				if (self.loop) {
-					self.endTime = game.world.?.gameTime.load(.monotonic) + self.length;
+					self.endTime = main.server.world.?.gameTime + self.length;
+					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity);
 				} else {
-					self.animationName = null;
+					const oldAnimation = self.animationName;
+					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity);
+					if (self.animationName == oldAnimation) {
+						self.animationName = null;
+						self.onAnimationEnd = null;
+					}	
 				}
 			}
 		}
@@ -131,7 +138,7 @@ pub const client = struct {
 			animationComponent.endTime = attemptedAnimation.animationLength + game.world.?.gameTime.load(.monotonic);
 			animationComponent.overwritable = attemptedAnimation.overwritable;
 			animationComponent.loop = attemptedAnimation.loop;
-			if (attemptedAnimation.onAnimationEnd != null) std.log.err("Cannot have OnAnimationEnd on client player_hand_animation component", .{});
+			animationComponent.onAnimationEnd = attemptedAnimation.onAnimationEnd;
 		}
 	}
 	pub fn setAnimationMatrix(entity: Entity, givenMatrix: Mat4f) void {
@@ -187,9 +194,12 @@ pub const server = struct {
 					self.endTime = main.server.world.?.gameTime + self.length;
 					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity);
 				} else {
+					const oldAnimation = self.animationName;
 					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity);
-					self.animationName = null;
-					self.onAnimationEnd = null;
+					if (self.animationName == oldAnimation) {
+						self.animationName = null;
+						self.onAnimationEnd = null;
+					}	
 				}
 			}
 		}
