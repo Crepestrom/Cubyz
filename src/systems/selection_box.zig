@@ -67,7 +67,7 @@ pub const server = struct {
 			functionApplied(id);
 		}
 	}
-	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void, options: SelectionOptions) void {
+	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity, position: Vec3d) void, options: SelectionOptions) void {
 		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
 			const relativePos: Vec3d = @abs(position - (component.offset + (main.entity.components.@"cubyz:position".server.getPosition(id) orelse continue)));
@@ -75,7 +75,7 @@ pub const server = struct {
 			if (combinedBoundingBox[1] < relativePos[1]) continue;
 			if (combinedBoundingBox[2] < relativePos[2]) continue;
 			if (options.ignoreSelf != null) {if (options.ignoreSelf.? == id) continue;}
-			functionApplied(id);
+			functionApplied(id, sourcePos);
 		}
 	}
 };

@@ -179,6 +179,8 @@ pub const client = struct {
 };
 // ############################# Server only stuff ################################
 pub const server = struct {
+	var launchDirection: Vec3d = .{0, 0, 0};
+
 	const animations = struct {
 		var maceWindup: @"cubyz:player_hand_animation".animationInfo = undefined;
 		var maceFullCharged: @"cubyz:player_hand_animation".animationInfo = undefined;
@@ -231,8 +233,13 @@ pub const server = struct {
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 
-	fn dealDamage(givenEntity: Entity) void {
+	fn dealDamage(givenEntity: Entity, position: Vec3d) void {
 		std.log.debug("damaged a entity", .{});
+		_ = position;
 		main.sync.addHealth(-2, .kill, .server, givenEntity);
+	}
+	
+	fn launchEnemies(givenEntity: Entity, position: Vec3d) void {
+		
 	}
 };

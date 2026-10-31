@@ -141,8 +141,9 @@ pub const server = struct {
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 
-	fn dealDamage(givenEntity: Entity) void {
+	fn dealDamage(givenEntity: Entity, position: Vec3d) void {
 		std.log.debug("damaged a entity", .{});
+		_ = position;
 		main.sync.addHealth(-2, .kill, .server, givenEntity);
 	}
 };
