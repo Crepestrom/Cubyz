@@ -38,12 +38,14 @@ pub const client = struct {
 	pub fn deinit() void {}
 	pub fn clear() void {}
 
-	pub fn render(ambientLight: Vec3f, playerPos: Vec3d, deltaTime: f64) void {
+	pub fn render(currentFrame: *graphics.vulkan.Frame, ambientLight: Vec3f, playerPos: Vec3d, deltaTime: f64) void {
+		_ = currentFrame;
 		_ = ambientLight;
 		_ = playerPos;
 		_ = deltaTime;
 	}
-	pub fn renderHud(ambientLight: Vec3f, playerPos: Vec3d) void {
+	pub fn renderHud(currentFrame: *graphics.vulkan.Frame, ambientLight: Vec3f, playerPos: Vec3d) void {
+		_ = currentFrame;
 		_ = ambientLight;
 		_ = playerPos;
 	}
@@ -67,15 +69,16 @@ pub const server = struct {
 			functionApplied(id);
 		}
 	}
-	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity, position: Vec3d) void, options: SelectionOptions) void {
+	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void, options: SelectionOptions) void {
 		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
-			const relativePos: Vec3d = @abs(position - (component.offset + (main.entity.components.@"cubyz:position".server.getPosition(id) orelse continue)));
+			const entityPos = main.entity.components.@"cubyz:position".server.getPosition(id) orelse continue;
+			const relativePos: Vec3d = @abs(position - entityPos);
 			if (combinedBoundingBox[0] < relativePos[0]) continue;
 			if (combinedBoundingBox[1] < relativePos[1]) continue;
 			if (combinedBoundingBox[2] < relativePos[2]) continue;
 			if (options.ignoreSelf != null) {if (options.ignoreSelf.? == id) continue;}
-			functionApplied(id, sourcePos);
+			functionApplied(id, position, entityPos);
 		}
 	}
 };

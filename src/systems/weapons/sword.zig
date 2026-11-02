@@ -43,13 +43,15 @@ pub const client = struct {
 	pub fn deinit() void {}
 	pub fn clear() void {}
 
-	pub fn render(ambientLight: Vec3f, playerPos: Vec3d, deltaTime: f64) void {
+	pub fn render(currentFrame: *graphics.vulkan.Frame, ambientLight: Vec3f, playerPos: Vec3d, deltaTime: f64) void {
+		_ = currentFrame;
 		_ = ambientLight;
 		_ = playerPos;
 		_ = deltaTime;
 		animateHandObject();
 	}
-	pub fn renderHud(ambientLight: Vec3f, playerPos: Vec3d) void {
+	pub fn renderHud(currentFrame: *graphics.vulkan.Frame, ambientLight: Vec3f, playerPos: Vec3d) void {
+		_ = currentFrame;
 		_ = ambientLight;
 		_ = playerPos;
 	}
@@ -125,7 +127,7 @@ pub const server = struct {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		std.log.debug("swing sword on server", .{});
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
-		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 10, dealDamage, .{ .ignoreSelf = givenEntity });
+		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
@@ -141,9 +143,10 @@ pub const server = struct {
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 
-	fn dealDamage(givenEntity: Entity, position: Vec3d) void {
+	fn dealDamage(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
 		std.log.debug("damaged a entity", .{});
-		_ = position;
+		_ = sourcePosition;
+		_ = entityPosition;
 		main.sync.addHealth(-2, .kill, .server, givenEntity);
 	}
 };
