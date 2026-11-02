@@ -8,9 +8,9 @@ const Vec3d = vec.Vec3d;
 const NeverFailingAllocator = main.heap.NeverFailingAllocator;
 
 const @"cubyz:position" = main.entity.components.@"cubyz:position";
+const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
 
 pos: *Vec3d = undefined,
-vel: Vec3d = .{0, 0, 0},
 rot: Vec3f = .{0, 0, 0},
 
 name: ?[]const u8 = null,
@@ -26,7 +26,6 @@ pub fn loadFrom(self: *@This(), id: main.entity.Entity, zon: ZonElement, comptim
 		.client => &@"cubyz:position".client.find(id).position,
 		.server => &@"cubyz:position".server.find(id).position,
 	};
-	self.vel = zon.get(Vec3d, "velocity") orelse .{0, 0, 0};
 	self.rot = zon.get(Vec3f, "rotation") orelse .{0, 0, 0};
 
 	if (zon.getChildOrNull("name")) |name| {
@@ -46,7 +45,6 @@ pub fn clone(self: *@This(), copy: *@This()) void {
 
 pub fn save(self: *const @This(), allocator: NeverFailingAllocator, audience: main.entity.AudienceInfo) ZonElement {
 	const zon = ZonElement.initObject(allocator);
-	zon.put("velocity", self.vel);
 	zon.put("rotation", self.rot);
 	zon.put("id", @backingInt(self.id));
 

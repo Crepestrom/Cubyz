@@ -34,6 +34,8 @@ pub const BlockDrop = @import("BlockDrop.zig");
 
 pub const command = @import("command.zig");
 
+const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+
 pub const WorldEditData = struct {
 	const maxWorldEditHistoryCapacity: u32 = 1024;
 
@@ -332,6 +334,9 @@ pub const User = struct { // MARK: User
 		if (main.entity.components.@"cubyz:position".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:position".server.loadFromValues(self.id, self.lastPos);
 		}
+		if (main.entity.components.@"cubyz:velocity".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:velocity".server.loadFromValues(self.id, .{0, 0, 0});
+		}
 		if (main.entity.components.@"cubyz:hitbox".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:hitbox".server.loadFromValues(self.id, Vec3d{0, 0, main.game.player.standingBoundingBoxExtent[2]}, main.game.player.standingBoundingBoxExtent*Vec3d{2, 2, 2});
 		}
@@ -344,7 +349,7 @@ pub const User = struct { // MARK: User
 			}
 		}
 
-		self.interpolation.init(@ptrCast(&self.player().pos.*), @ptrCast(&self.player().vel));
+		self.interpolation.init(@ptrCast(&self.player().pos.*), @ptrCast(@"cubyz:velocity".getVelocityPointer(self.player().id, .server)));
 		self.loadUnloadChunks();
 
 		main.entity.components.@"cubyz:player".server.load(self.id, @truncate(self.playerIndex));
@@ -726,7 +731,7 @@ fn update() void { // MARK: update()
 		entityData.append(.{
 			.id = id,
 			.pos = user.player().pos.*,
-			.vel = user.player().vel,
+			.vel = @"cubyz:velocity".getVelocity(user.player().id, .server),
 			.rot = user.player().rot,
 		});
 	}
