@@ -34,6 +34,7 @@ const c = @import("c");
 
 const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
 const @"cubyz:weapon_blocking" = main.entity.components.@"cubyz:weapon_blocking";
+const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
 
 const entityComponent = main.entityComponent;
 
@@ -219,6 +220,8 @@ pub const server = struct {
 		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("maceFullCharged")) {
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceFullSwing);
 			systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, dealDamage, .{.ignoreSelf = givenEntity});
+			@"cubyz:velocity".addVelocity(givenEntity, Vec3d{0, 0, 10}, .server);
+			systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 5, launchEnemies, .{.ignoreSelf = givenEntity});
 		}
 		std.log.debug("released the swing 2 {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName});
 	}
@@ -243,8 +246,7 @@ pub const server = struct {
 	}
 	
 	fn launchEnemies(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
-		_ = sourcePosition;
-		_ = entityPosition;
-		main.sync.addHealth(-2, .kill, .server, givenEntity);
+		const direction = vec.normalize(sourcePosition - entityPosition);
+		@"cubyz:velocity".addVelocity(givenEntity, direction*Vec3d{10, 10, 10}, .server);
 	}
 };

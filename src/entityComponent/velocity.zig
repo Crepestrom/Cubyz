@@ -49,6 +49,12 @@ pub fn setVelocity(entity: Entity, givenVelocity: Vec3d, side: main.sync.Side) v
 		.server => server.setVelocity(entity, givenVelocity),
 	};
 }
+pub fn addVelocity(entity: Entity, addedVelocity: Vec3d, side: main.sync.Side) void {
+	return switch (side) {
+		.client => client.addVelocity(entity, addedVelocity),
+		.server => server.addVelocity(entity, addedVelocity),
+	};
+}
 
 // ############################# Client only stuff ################################
 pub const client = struct {
@@ -105,6 +111,10 @@ pub const client = struct {
 		const velocityComponent = components.get(entity) orelse return;
 		velocityComponent.velocity = givenVelocity;
 	}
+	pub fn addVelocity(entity: Entity, givenVelocity: Vec3d) void {
+		const velocityComponent = components.get(entity) orelse return;
+		velocityComponent.velocity += givenVelocity;
+	}
 };
 
 // ############################# Server only stuff ################################
@@ -147,6 +157,11 @@ pub const server = struct {
 	pub fn setVelocity(entity: Entity, givenVelocity: Vec3d) void {
 		const velocityComponent = components.get(entity) orelse return;
 		velocityComponent.velocity = givenVelocity;
+		main.entity.server.transmitChange(main.entity.components.@"cubyz:velocity", entity);
+	}
+	pub fn addVelocity(entity: Entity, givenVelocity: Vec3d) void {
+		const velocityComponent = components.get(entity) orelse return;
+		velocityComponent.velocity += givenVelocity;
 	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;

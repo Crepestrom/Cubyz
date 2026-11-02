@@ -26,6 +26,7 @@ const @"cubyz:energy" = main.entity.components.@"cubyz:energy";
 const @"cubyz:momentum" = main.entity.components.@"cubyz:momentum";
 const @"cubyz:ammo" = main.entity.components.@"cubyz:ammo";
 const @"cubyz:mana_charge" = main.entity.components.@"cubyz:mana_charge";
+const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
 
 pub const Side = enum { client, server };
 
