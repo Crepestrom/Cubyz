@@ -78,9 +78,9 @@ pub const client = struct {
 		loop: bool = false,
 		onAnimationEnd: ?*const fn (entity: Entity) void = null,
 		pub fn updateAnimation(self: *Component, entity: Entity) void {
-			if (self.endTime < main.server.world.?.gameTime) {
+			if (self.endTime < game.world.?.gameTime.load(.monotonic)) {
 				if (self.loop) {
-					self.endTime = main.server.world.?.gameTime + self.length;
+					self.endTime = game.world.?.gameTime.load(.monotonic) + self.length;
 					if (self.onAnimationEnd != null) self.onAnimationEnd.?(entity);
 				} else {
 					const oldAnimation = self.animationName;

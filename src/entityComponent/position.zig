@@ -31,6 +31,31 @@ const c = @import("c");
 pub var entityComponentID: main.entity.EntityComponentId = undefined;
 pub const entityComponentVersion = 0;
 
+pub fn getPosition(entity: Entity, side: main.sync.Side) ?Vec3d {
+	return switch (side) {
+		.client => client.getPosition(entity),
+		.server => server.getPosition(entity),
+	};
+}
+pub fn getPositionPointer(entity: Entity, side: main.sync.Side) ?*Vec3d {
+	return switch (side) {
+		.client => &(client.get(entity) orelse return null).position,
+		.server => &(server.get(entity) orelse return null).position,
+	};
+}
+pub fn setPosition(entity: Entity, givenPosition: Vec3d, side: main.sync.Side) void {
+	return switch (side) {
+		.client => client.setPosition(entity, givenPosition),
+		.server => server.setPosition(entity, givenPosition),
+	};
+}
+pub fn addPosition(entity: Entity, addedPosition: Vec3d, side: main.sync.Side) void {
+	return switch (side) {
+		.client => client.addPosition(entity, addedPosition),
+		.server => server.addPosition(entity, addedPosition),
+	};
+}
+
 // ############################# Client only stuff ################################
 pub const client = struct {
 	const Component = struct {
