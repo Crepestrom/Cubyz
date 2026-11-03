@@ -162,6 +162,7 @@ pub const server = struct {
 	pub fn addVelocity(entity: Entity, givenVelocity: Vec3d) void {
 		const velocityComponent = components.get(entity) orelse return;
 		velocityComponent.velocity += givenVelocity;
+		main.entity.server.transmitChange(main.entity.components.@"cubyz:velocity", entity);
 	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
