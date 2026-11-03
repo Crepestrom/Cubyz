@@ -74,9 +74,11 @@ pub const client = struct {
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
 	}
-	pub fn find(entity: Entity) *Component {
+	pub fn find(entity: Entity, defaultPos: Vec3d) *Component {
 		return (components.get(entity) orelse {
-			return components.add(main.globalAllocator, entity);
+			const position = components.add(main.globalAllocator, entity);
+			position.position = defaultPos;
+			return position;
 		});
 	}
 
@@ -97,11 +99,11 @@ pub const client = struct {
 		components.remove(entity) catch {};
 	}
 
-	pub fn getPosition(entity: Entity) ?Vec3d {
+	fn getPosition(entity: Entity) ?Vec3d {
 		const positionComponent = components.get(entity) orelse return null;
 		return positionComponent.position;
 	}
-	pub fn setPosition(entity: Entity, givenPosition: Vec3d) void {
+	fn setPosition(entity: Entity, givenPosition: Vec3d) void {
 		const positionComponent = components.get(entity) orelse return;
 		positionComponent.position = givenPosition;
 	}
@@ -129,19 +131,14 @@ pub const server = struct {
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
 	}
-	pub fn find(entity: Entity) *Component {
+	pub fn find(entity: Entity, defaultPos: Vec3d) *Component {
 		return (components.get(entity) orelse {
-			return components.add(main.globalAllocator, entity);
+			const position = components.add(main.globalAllocator, entity);
+			position.position = defaultPos;
+			return position;
 		});
 	}
-	pub fn getPosition(entity: Entity) ?Vec3d {
-		const positionComponent = components.get(entity) orelse return null;
-		return positionComponent.position;
-	}
-	pub fn setPosition(entity: Entity, givenPosition: Vec3d) void {
-		const positionComponent = components.get(entity) orelse return;
-		positionComponent.position = givenPosition;
-	}
+
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
 		const ptr: *Component = components.add(main.globalAllocator, entity);
@@ -157,5 +154,14 @@ pub const server = struct {
 	}
 	pub fn unload(entity: Entity) void {
 		components.remove(entity) catch {};
+	}
+
+	fn getPosition(entity: Entity) ?Vec3d {
+		const positionComponent = components.get(entity) orelse return null;
+		return positionComponent.position;
+	}
+	fn setPosition(entity: Entity, givenPosition: Vec3d) void {
+		const positionComponent = components.get(entity) orelse return;
+		positionComponent.position = givenPosition;
 	}
 };

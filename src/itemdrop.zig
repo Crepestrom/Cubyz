@@ -29,6 +29,8 @@ const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
 
 const c = @import("c");
 
+const @"cubyz:position" = main.entity.components.@"cubyz:position";
+
 const ItemDrop = struct { // MARK: ItemDrop
 	pos: Vec3d,
 	vel: Vec3d,
@@ -380,9 +382,10 @@ pub const ItemDropManager = struct { // MARK: ItemDropManager
 				ii += 1;
 				continue;
 			}
+			const playerPos = @"cubyz:position".getPosition(user.player().id, .server).?;
 			const hitbox = main.game.player.outerBoundingBox;
-			const min = user.player().pos.* + hitbox.min;
-			const max = user.player().pos.* + hitbox.max;
+			const min = playerPos + hitbox.min;
+			const max = playerPos + hitbox.max;
 			const itemPos = self.list.items(.pos)[i];
 			const dist = @max(min - itemPos, itemPos - max);
 			if (@reduce(.Max, dist) < radius + pickupRange) {

@@ -34,6 +34,7 @@ pub const BlockDrop = @import("BlockDrop.zig");
 
 pub const command = @import("command.zig");
 
+const @"cubyz:position" = main.entity.components.@"cubyz:position";
 const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
 
 pub const WorldEditData = struct {
@@ -332,7 +333,7 @@ pub const User = struct { // MARK: User
 			main.entity.components.@"cubyz:player_hand_animation".server.loadEmpty(self.id);
 		}
 		if (main.entity.components.@"cubyz:position".server.get(self.id) == null) {
-			main.entity.components.@"cubyz:position".server.loadFromValues(self.id, self.lastPos);
+			main.entity.components.@"cubyz:position".server.loadFromValues(self.id, getSpawnPos(self));
 		}
 		if (main.entity.components.@"cubyz:velocity".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:velocity".server.loadFromValues(self.id, .{0, 0, 0});
@@ -349,7 +350,7 @@ pub const User = struct { // MARK: User
 			}
 		}
 
-		self.interpolation.init(@ptrCast(&self.player().pos.*), @ptrCast(@"cubyz:velocity".getVelocityPointer(self.player().id, .server)));
+		self.interpolation.init(@ptrCast(@"cubyz:position".getPositionPointer(self.id, .server)), @ptrCast(@"cubyz:velocity".getVelocityPointer(self.player().id, .server)));
 		self.loadUnloadChunks();
 
 		main.entity.components.@"cubyz:player".server.load(self.id, @truncate(self.playerIndex));
@@ -407,7 +408,8 @@ pub const User = struct { // MARK: User
 	}
 
 	fn loadUnloadChunks(self: *User) void {
-		const newPos: Vec3i = @as(Vec3i, @trunc(self.player().pos.*)) +% @as(Vec3i, @splat(chunk.chunkSize/2)) & ~@as(Vec3i, @splat(chunk.chunkMask));
+		const playerPos = @"cubyz:position".getPosition(self.player().id, .server).?;
+		const newPos: Vec3i = @as(Vec3i, @trunc(playerPos)) +% @as(Vec3i, @splat(chunk.chunkSize/2)) & ~@as(Vec3i, @splat(chunk.chunkMask));
 		const newRenderDistance = main.settings.simulationDistance;
 		if (@reduce(.Or, newPos != self.lastPos) or newRenderDistance != self.lastRenderDistance) {
 			self.unloadOldChunk(newPos, newRenderDistance);
@@ -730,17 +732,18 @@ fn update() void { // MARK: update()
 		const id = user.id; // TODO
 		entityData.append(.{
 			.id = id,
-			.pos = user.player().pos.*,
+			.pos = @"cubyz:position".getPosition(user.player().id, .server).?,
 			.vel = @"cubyz:velocity".getVelocity(user.player().id, .server).?,
 			.rot = user.player().rot,
 		});
 	}
 	for (userList) |user| {
-		main.network.protocols.entity_position.send(user.conn, user.player().pos.*, entityData.items, itemData);
+		main.network.protocols.entity_position.send(user.conn, @"cubyz:position".getPosition(user.player().id, .server).?, entityData.items, itemData);
 	}
 
 	for (userList) |user| {
-		const pos = @as(Vec3i, @trunc(user.player().pos.*));
+		const playerPos = @"cubyz:position".getPosition(user.player().id, .server).?;
+		const pos = @as(Vec3i, @trunc(playerPos));
 		const biomeId = world.?.getBiome(pos[0], pos[1], pos[2]).paletteId;
 		if (biomeId != user.lastSentBiomeId) {
 			user.lastSentBiomeId = biomeId;
