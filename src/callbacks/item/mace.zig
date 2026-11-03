@@ -17,17 +17,17 @@ pub fn run(self: *@This(), params: main.callbacks.UseItemCallback.Params) main.c
 	_ = self;
 	if (main.sync.threadContext == .client) {
 		switch (params.useType) {
-			.normal => main.systems.systems.mace.client.startSwing(params.entity),
-			.alt => main.systems.systems.mace.client.block(params.entity),
-			.normalEnd => main.systems.systems.mace.client.releaseSwing(params.entity),
-			.altEnd => main.systems.systems.mace.client.blockEnd(params.entity),
+			.normal => main.systems.systems.warhammer.client.startSwing(params.entity),
+			.alt => main.systems.systems.warhammer.client.block(params.entity),
+			.normalEnd => main.systems.systems.warhammer.client.releaseSwing(params.entity),
+			.altEnd => main.systems.systems.warhammer.client.blockEnd(params.entity),
 		}
 	} else if (main.sync.threadContext == .server) {
 		switch (params.useType) {
-			.normal => main.systems.systems.mace.server.startSwing(params.entity),
-			.alt => main.systems.systems.mace.server.block(params.entity),
-			.normalEnd => main.systems.systems.mace.server.releaseSwing(params.entity),
-			.altEnd => main.systems.systems.mace.server.blockEnd(params.entity),
+			.normal => main.systems.systems.warhammer.server.startSwing(params.entity),
+			.alt => main.systems.systems.warhammer.server.block(params.entity),
+			.normalEnd => main.systems.systems.warhammer.server.releaseSwing(params.entity),
+			.altEnd => main.systems.systems.warhammer.server.blockEnd(params.entity),
 		}
 	}
 	return .handled;

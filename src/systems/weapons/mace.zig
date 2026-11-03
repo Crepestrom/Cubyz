@@ -67,7 +67,7 @@ pub const client = struct {
 		animateFullSwing();
 	}
 	fn animateSwingWindup() void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceWindup")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("warhammerWindup")) orelse return)) return;
 
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
 		const horizontalMovement = sampleQuadratic(swingProgress);
@@ -80,7 +80,7 @@ pub const client = struct {
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
 	}
 	fn animateFullCharged() void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceFullCharged")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("warhammerFullCharged")) orelse return)) return;
 
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
 		const pos = Vec3d{0.4, 1.45, 0.9};
@@ -94,7 +94,7 @@ pub const client = struct {
 	}
 
 	fn animateSmallSwing() void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceSmallSwing")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("warhammerSmallSwing")) orelse return)) return;
 
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
 		const pos = Vec3d{0.4, 1.45 + swingProgress*0.5, 0.6 - swingProgress*1.5};
@@ -107,7 +107,7 @@ pub const client = struct {
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
 	}
 	fn animateFullSwing() void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceFullSwing")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("warhammerFullSwing")) orelse return)) return;
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
 		const pos = Vec3d{0.4, 1.45 + swingProgress*0.5, 0.9 - swingProgress*2};
 		var modelMatrix = Mat4f.identity();
@@ -120,7 +120,7 @@ pub const client = struct {
 	}
 
 	fn animateBlock() void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceBlock")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("warhammerBlock")) orelse return)) return;
 
 		const pos = Vec3d{-1, 0.6, 0.0};
 		var modelMatrix = Mat4f.identity();
@@ -130,7 +130,7 @@ pub const client = struct {
 		@"cubyz:player_hand_animation".client.setAnimationMatrix(main.game.player.id, modelMatrix);
 	}
 	pub fn animateBlockEnd() void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("maceBlockEnd")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(main.game.player.id, main.Tag.find("warhammerBlockEnd")) orelse return)) return;
 
 		const swingProgress = @"cubyz:player_hand_animation".client.getPredictedAnimationProgress(main.game.player.id) orelse 0;
 		const pos = Vec3d{-1 + swingProgress, 0.6, 0.0};
@@ -151,31 +151,31 @@ pub const client = struct {
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) return;
 
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing});
 	}
 	fn chargedSwing(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceWindup")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("warhammerWindup")) orelse return)) return;
 		std.log.debug("fully charge strike on client", .{});
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullCharged"), .animationLength = 2, .loop = true});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerFullCharged"), .animationLength = 2, .loop = true});
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceWindup")) {
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 3});
-		} else if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceFullCharged")) {
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceFullSwing"), .animationLength = 3});
+		if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerWindup")) {
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerSmallSwing"), .animationLength = 3});
+		} else if (@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerFullCharged")) {
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerFullSwing"), .animationLength = 3});
 		}
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceBlock"), .animationLength = 1, .loop = true});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".client.find(givenEntity);
 		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("maceBlock"))) return;
+		if (!(@"cubyz:player_hand_animation".client.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerBlock"))) return;
 
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("maceBlockEnd"), .animationLength = 5});
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerBlockEnd"), .animationLength = 5});
 		@"cubyz:weapon_blocking".client.unload(givenEntity);
 	}
 };
@@ -184,41 +184,41 @@ pub const server = struct {
 	var launchDirection: Vec3d = .{0, 0, 0};
 
 	const animations = struct {
-		var maceWindup: @"cubyz:player_hand_animation".animationInfo = undefined;
-		var maceFullCharged: @"cubyz:player_hand_animation".animationInfo = undefined;
-		var maceSmallSwing: @"cubyz:player_hand_animation".animationInfo = undefined;
-		var maceFullSwing: @"cubyz:player_hand_animation".animationInfo = undefined;
-		var maceBlock: @"cubyz:player_hand_animation".animationInfo = undefined;
-		var maceBlockEnd: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var warhammerWindup: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var warhammerFullCharged: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var warhammerSmallSwing: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var warhammerFullSwing: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var warhammerBlock: @"cubyz:player_hand_animation".animationInfo = undefined;
+		var warhammerBlockEnd: @"cubyz:player_hand_animation".animationInfo = undefined;
 	};
 
 	pub fn init() void {
-		animations.maceWindup = .{.animationName = main.Tag.find("maceWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing};
-		animations.maceFullCharged = .{.animationName = main.Tag.find("maceFullCharged"), .animationLength = 2, .loop = true};
-		animations.maceSmallSwing = .{.animationName = main.Tag.find("maceSmallSwing"), .animationLength = 3};
-		animations.maceFullSwing = .{.animationName = main.Tag.find("maceFullSwing"), .animationLength = 3};
-		animations.maceBlock = .{.animationName = main.Tag.find("maceBlock"), .animationLength = 1, .loop = true};
-		animations.maceBlockEnd = .{.animationName = main.Tag.find("maceBlockEnd"), .animationLength = 5};
+		animations.warhammerWindup = .{.animationName = main.Tag.find("warhammerWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing};
+		animations.warhammerFullCharged = .{.animationName = main.Tag.find("warhammerFullCharged"), .animationLength = 2, .loop = true};
+		animations.warhammerSmallSwing = .{.animationName = main.Tag.find("warhammerSmallSwing"), .animationLength = 3};
+		animations.warhammerFullSwing = .{.animationName = main.Tag.find("warhammerFullSwing"), .animationLength = 3};
+		animations.warhammerBlock = .{.animationName = main.Tag.find("warhammerBlock"), .animationLength = 1, .loop = true};
+		animations.warhammerBlockEnd = .{.animationName = main.Tag.find("warhammerBlockEnd"), .animationLength = 5};
 	}
 	pub fn deinit() void {}
 
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".server.isPlayingAnyAnimation(givenEntity) orelse true) return;
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceWindup);
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerWindup);
 	}
 	fn chargedSwing(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceWindup")) orelse return)) return;
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("warhammerWindup")) orelse return)) return;
 		std.log.debug("fully charge strike", .{});
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceFullCharged);
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullCharged);
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {
-		std.log.debug("released the swing 1 {} {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName, main.Tag.find("maceWindup")});
+		std.log.debug("released the swing 1 {} {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName, main.Tag.find("warhammerWindup")});
 		const entityPos: Vec3d = @"cubyz:position".getPosition(givenEntity, .server) orelse return;
-		if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("maceWindup")) {
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceSmallSwing);
+		if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerWindup")) {
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerSmallSwing);
 			systems.systems.selection_box.server.selectInCube(entityPos, 2, dealDamage, .{.ignoreSelf = givenEntity});
-		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("maceFullCharged")) {
-			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceFullSwing);
+		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerFullCharged")) {
+			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullSwing);
 			@"cubyz:position".setPosition(givenEntity, entityPos, .server);
 			@"cubyz:velocity".addVelocity(givenEntity, Vec3d{0, 0, 10}, .server);
 			systems.systems.selection_box.server.selectInCube(entityPos, 5, dealDamage, .{.ignoreSelf = givenEntity});
@@ -229,13 +229,13 @@ pub const server = struct {
 
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceBlock);
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerBlock);
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
 		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
-		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("maceBlock")) orelse true)) return;
-		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.maceBlockEnd);
+		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("warhammerBlock")) orelse true)) return;
+		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerBlockEnd);
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 

@@ -11,4 +11,4 @@ pub const player_hand_animation = @import("player_hand_animation.zig");
 pub const weapon_blocking = @import("weapon_blocking.zig");
 
 pub const sword = @import("weapons/sword.zig");
-pub const mace = @import("weapons/mace.zig");
+pub const warhammer = @import("weapons/warhammer.zig");
