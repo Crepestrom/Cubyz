@@ -96,7 +96,7 @@ pub const server = struct {
 	}
 	pub fn getPosition(entity: Entity) ?Vec3d {
 		const hitboxComponent = components.get(entity) orelse return null;
-		return hitboxComponent.offset + main.entity.components.@"cubyz:position".server.getPosition(entity) orelse return null;
+		return hitboxComponent.offset + main.entity.components.@"cubyz:position".getPosition(entity) orelse return null;
 	}
 	pub fn getSize(entity: Entity) ?Vec3d {
 		const hitboxComponent = components.get(entity) orelse return null;

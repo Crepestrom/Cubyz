@@ -127,7 +127,7 @@ pub const server = struct {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		std.log.debug("swing sword on server", .{});
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
-		systems.systems.selection_box.server.selectInCube(@"cubyz:position".server.getPosition(givenEntity) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
+		systems.systems.selection_box.server.selectInCube(@"cubyz:position".getPosition(givenEntity, .server) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
