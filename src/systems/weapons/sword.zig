@@ -28,14 +28,15 @@ const systems = main.systems;
 const entity = main.entity;
 const Entity = entity.Entity;
 
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-
 const c = @import("c");
 
 const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
 const @"cubyz:weapon_blocking" = main.entity.components.@"cubyz:weapon_blocking";
+const @"cubyz:position" = main.entity.components.@"cubyz:position";
+const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
 
 const entityComponent = main.entityComponent;
+const swingsPerSecond = 2;
 
 // ############################# Client only stuff ################################
 pub const client = struct {
@@ -104,7 +105,7 @@ pub const client = struct {
 
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
-		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
+		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
@@ -126,8 +127,13 @@ pub const server = struct {
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		std.log.debug("swing sword on server", .{});
-		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10});
+		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
 		systems.systems.selection_box.server.selectInCube(@"cubyz:position".getPosition(givenEntity, .server) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
+		const entityPos: Vec3d = @"cubyz:position".getPosition(givenEntity, .server) orelse return;
+		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
+		const chargePower = 2;
+		@"cubyz:position".setPosition(givenEntity, entityPos, .server);
+		@"cubyz:velocity".addVelocity(givenEntity, horizontalForward*Vec3d{chargePower, chargePower, chargePower}, .server);
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;

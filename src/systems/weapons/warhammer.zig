@@ -218,9 +218,11 @@ pub const server = struct {
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerSmallSwing);
 			systems.systems.selection_box.server.selectInCube(entityPos, 2, dealDamage, .{.ignoreSelf = givenEntity});
 		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerFullCharged")) {
+			const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
+			const chargePower = -5;
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullSwing);
 			@"cubyz:position".setPosition(givenEntity, entityPos, .server);
-			@"cubyz:velocity".addVelocity(givenEntity, Vec3d{0, 0, 10}, .server);
+			@"cubyz:velocity".addVelocity(givenEntity, Vec3d{0, 0, 10} + horizontalForward*Vec3d{chargePower, chargePower, chargePower}, .server);
 			systems.systems.selection_box.server.selectInCube(entityPos, 5, dealDamage, .{.ignoreSelf = givenEntity});
 			systems.systems.selection_box.server.selectInCube(entityPos, 5, launchEnemies, .{.ignoreSelf = givenEntity});
 		}

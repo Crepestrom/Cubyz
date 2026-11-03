@@ -1,7 +1,7 @@
 .{
 	.tags = .{.sliceable},
 	.onUse = .{
-		.type = .sword,
+		.type = .pavice,
 	},
 	.disabled = .{
 		0, 0, 1, 0, 0,
