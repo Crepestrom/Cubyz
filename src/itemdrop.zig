@@ -23,8 +23,13 @@ const Vec3i = vec.Vec3i;
 const BinaryReader = main.utils.BinaryReader;
 const BinaryWriter = main.utils.BinaryWriter;
 const NeverFailingAllocator = main.heap.NeverFailingAllocator;
+const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
+
+const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
 
 const c = @import("c");
+
+const @"cubyz:position" = main.entity.components.@"cubyz:position";
 
 const ItemDrop = struct { // MARK: ItemDrop
 	pos: Vec3d,
@@ -377,9 +382,10 @@ pub const ItemDropManager = struct { // MARK: ItemDropManager
 				ii += 1;
 				continue;
 			}
+			const playerPos = @"cubyz:position".getPosition(user.player().id, .server).?;
 			const hitbox = main.game.player.outerBoundingBox;
-			const min = user.player().pos + hitbox.min;
-			const max = user.player().pos + hitbox.max;
+			const min = playerPos + hitbox.min;
+			const max = playerPos + hitbox.max;
 			const itemPos = self.list.items(.pos)[i];
 			const dist = @max(min - itemPos, itemPos - max);
 			if (@reduce(.Max, dist) < radius + pickupRange) {
@@ -540,10 +546,10 @@ const bob_manager = struct {
 		}
 
 		const inputSpeed: f32 = @floatCast(game.player.inputSpeed);
-
+		const playerVel = @"cubyz:velocity".getVelocity(game.player.super.id, .client).?;
 		const horizontalVel: Vec3f = .{
-			@floatCast(game.player.super.vel[0]),
-			@floatCast(game.player.super.vel[1]),
+			@floatCast(playerVel[0]),
+			@floatCast(playerVel[1]),
 			0,
 		};
 
@@ -604,8 +610,9 @@ pub const item_display_manager = struct { // MARK: item_display_manager
 	}
 
 	fn getAscentDescentOffset() Vec3f {
-		const playerVel: Vec3f = .{@floatCast((game.player.super.vel[2]*0.009 + game.player.eye.vel[2]*0.0075)), 0, 0};
-		return vec.clampMag(playerVel, 0.32);
+		const playerVel = @"cubyz:velocity".getVelocity(game.player.super.id, .client).?;
+		const vel: Vec3f = .{@floatCast((playerVel[2]*0.009 + game.player.eye.vel[2]*0.0075)), 0, 0};
+		return vec.clampMag(vel, 0.32);
 	}
 };
 
@@ -907,20 +914,32 @@ pub const item_drop_renderer = struct { // MARK: item_drop_renderer
 			var modelMatrix = Mat4f.rotationZ(-rot[2]);
 			modelMatrix = modelMatrix.mul(Mat4f.rotationY(-rot[1]));
 			modelMatrix = modelMatrix.mul(Mat4f.rotationX(-rot[0]));
-			modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
-			if (!isBlock) {
-				if (item == .proceduralItem) {
-					modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
-					modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.25));
-				} else {
-					modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.45));
-				}
+
+			if (isPlayingCustomAnimation()) {
+				modelMatrix = getCustomAnimation();
 			} else {
-				modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.2));
+				modelMatrix = modelMatrix.mul(Mat4f.translation(@floatCast(pos)));
+				if (!isBlock) {
+					if (item == .proceduralItem) {
+						modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.47));
+						modelMatrix = modelMatrix.mul(Mat4f.rotationY(std.math.pi*0.25));
+					} else {
+						modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.45));
+					}
+				} else {
+					modelMatrix = modelMatrix.mul(Mat4f.rotationZ(-std.math.pi*0.2));
+				}
+				modelMatrix = modelMatrix.mul(Mat4f.scale(@splat(scale)));
+				modelMatrix = modelMatrix.mul(Mat4f.translation(@splat(-0.5)));
 			}
-			modelMatrix = modelMatrix.mul(Mat4f.scale(@splat(scale)));
-			modelMatrix = modelMatrix.mul(Mat4f.translation(@splat(-0.5)));
 			drawItem(vertices, modelMatrix);
 		}
+	}
+
+	fn isPlayingCustomAnimation() bool {
+		return @"cubyz:player_hand_animation".client.isPlayingAnyAnimation(main.game.player.id) orelse false;
+	}
+	fn getCustomAnimation() Mat4f {
+		return @"cubyz:player_hand_animation".client.getAnimationMatrix(main.game.player.id) orelse Mat4f.identity();
 	}
 };

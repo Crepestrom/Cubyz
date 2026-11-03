@@ -3,7 +3,7 @@ const std = @import("std");
 const main = @import("main");
 const Item = main.items.Item;
 const ClientInventory = main.items.Inventory.ClientInventory;
-const Player = main.game.Player;
+const Player = main.game.player;
 const Vec2f = main.vec.Vec2f;
 
 const gui = @import("../gui.zig");

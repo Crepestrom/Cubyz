@@ -20,6 +20,8 @@ const Neighbor = main.chunk.Neighbor;
 const BaseItemIndex = main.items.BaseItemIndex;
 const ProceduralItemTypeIndex = main.items.ProceduralItemTypeIndex;
 
+const @"cubyz:position" = main.entity.components.@"cubyz:position";
+
 pub const InventoryId = enum(u32) { _ };
 
 pub const client = struct { // MARK: client
@@ -284,7 +286,7 @@ pub const server = struct { // MARK: server
 						defer main.stackAllocator.free(userList);
 						for (userList) |callbackUser| {
 							if (callbackUser.id == callbackSource.workbench.playerId) {
-								sync.server.executeCommand(.{.depositOrDrop = .initWithInventories(&.{playerInventory}, workbenchInventory, callbackUser.player().pos)}, null);
+								sync.server.executeCommand(.{.depositOrDrop = .initWithInventories(&.{playerInventory}, workbenchInventory, @"cubyz:position".getPosition(callbackUser.player().id, .client).?)}, null);
 								break;
 							}
 						}
@@ -576,6 +578,10 @@ pub const ClientInventory = struct { // MARK: ClientInventory
 		return self.super.getStack(slot);
 	}
 
+	pub fn getInventoryAndSlot(self: ClientInventory, slot: usize) InventoryAndSlot {
+		return self.super.getInventoryAndSlot(slot);
+	}
+
 	pub fn getAmount(self: ClientInventory, slot: usize) u16 {
 		return self.super.getAmount(slot);
 	}
@@ -629,6 +635,10 @@ pub fn getItem(self: Inventory, slot: usize) Item {
 
 pub fn getStack(self: Inventory, slot: usize) ItemStack {
 	return self._items[slot];
+}
+
+pub fn getInventoryAndSlot(self: Inventory, slot: usize) InventoryAndSlot {
+	return InventoryAndSlot{ .inv = self, .slot = @intCast(slot) };
 }
 
 pub fn getAmount(self: Inventory, slot: usize) u16 {

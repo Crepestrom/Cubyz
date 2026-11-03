@@ -192,6 +192,4 @@ pub const client = struct { // MARK: client
 pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
-
-	pub fn update() void {}
 };

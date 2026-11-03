@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const main = @import("main");
-const Player = main.game.Player;
+const Player = main.game.player;
 const ItemStack = main.items.ItemStack;
 const Vec2f = main.vec.Vec2f;
 const Texture = main.graphics.Texture;
