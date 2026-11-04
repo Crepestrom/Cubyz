@@ -35,6 +35,8 @@ const player = main.game.player;
 
 const @"cubyz:position" = main.entity.components.@"cubyz:position";
 const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:pavice_charging" = main.entity.components.@"cubyz:pavice_charging";
+
 
 const c = @import("c");
 
@@ -57,9 +59,34 @@ pub const client = struct {
 		_ = ambientLight;
 		_ = playerPos;
 	}
+
+	pub const onPhysicsUpdate: systems.RunOrderManager.FunctionHook(fn(deltaTime: f64) void) = .{
+		.addedPhase = .{.self = "paviceChargeFrictionOverride", .targetSortPhase = "calculateFriction", .sortDirection = .after, .priority = 20},
+		.addedFunctionStep = .{.targetPhase = "paviceChargeFrictionOverride"},
+		.function = update,
+	};
+
+	fn update(deltaTime: f64) void {
+		_ = deltaTime;
+		if (@"cubyz:pavice_charging".client.get(main.game.player.id) != null) {
+			player.friction = .{.current = 2, .mobile = 2};
+		}
+	}
 };
 // ############################# Server only stuff ################################
 pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
+
+	pub const onUpdateEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedFunctionStep = .{.targetPhase = "start"},
+		.function = update,
+	};
+
+	fn update() void {
+		for (@"cubyz:pavice_charging".server.components.dense.items, entity.components.@"cubyz:pavice_charging".server.components.denseToSparseIndex.items) |*component, id| {
+			component.updateAnimation(id);
+		}
+	}
+
 };

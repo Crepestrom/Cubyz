@@ -5,6 +5,7 @@ pub const @"cubyz:health" = @import("health.zig");
 pub const @"cubyz:health_change" = @import("health_change.zig");
 pub const @"cubyz:hitbox" = @import("hitbox.zig");
 pub const @"cubyz:model" = @import("model.zig");
+pub const @"cubyz:pavice_charging" = @import("pavice_charging.zig");
 pub const @"cubyz:permissions" = @import("permissions.zig");
 pub const @"cubyz:player" = @import("player.zig");
 pub const @"cubyz:player_hand_animation" = @import("player_hand_animation.zig");

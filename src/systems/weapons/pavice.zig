@@ -34,6 +34,7 @@ const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_han
 const @"cubyz:weapon_blocking" = main.entity.components.@"cubyz:weapon_blocking";
 const @"cubyz:position" = main.entity.components.@"cubyz:position";
 const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:pavice_charging" = main.entity.components.@"cubyz:pavice_charging";
 
 const entityComponent = main.entityComponent;
 const swingsPerSecond = 1.5;
@@ -200,6 +201,7 @@ pub const server = struct {
 		const chargePower = 30;
 		@"cubyz:position".setPosition(givenEntity, entityPos, .server);
 		@"cubyz:velocity".addVelocity(givenEntity, horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
+		@"cubyz:pavice_charging".server.add(givenEntity, 20);
 	}
 
 	fn dealDamage(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {

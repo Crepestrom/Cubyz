@@ -71,6 +71,7 @@ pub const client = struct {
 		const gravity: f64 = if (player.isFlying.load(.monotonic)) 0.0 else physics.baseGravity;
 		const jumpHeight: f64 = if (player.jumping) player.jumpHeight else 0.0;
 		var motion = physics.calculateMotion(.client, deltaTime, player.friction, player.volumeProperties, physics.playerDensity, playerPos.*, playerVel, player.acc, gravity, jumpHeight);
+		std.log.debug("hello motion my old friend {} {}", .{motion, playerVel});
 
 		{
 			player.mutex.lock();

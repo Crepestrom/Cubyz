@@ -70,6 +70,7 @@ pub const collision = struct { // MARK: collision
 	}
 
 	pub fn collides(comptime side: main.sync.Side, dir: Direction, amount: f64, pos: Vec3d, hitBox: Box) ?Box {
+		std.log.debug("what the fuck {}", .{pos});
 		var boundingBox: Box = .{
 			.min = pos + hitBox.min,
 			.max = pos + hitBox.max,
@@ -274,12 +275,16 @@ pub const collision = struct { // MARK: collision
 		// First argument is amount we end up moving in dir, second argument is how far up we step
 		var resultingMovement: Vec3d = .{0, 0, 0};
 		resultingMovement[index] = amount;
+		std.log.debug("test point 0 {} {}", .{resultingMovement, amount});
 		var checkPos = pos;
 		checkPos[index] += amount;
+
+		std.log.debug("test point 1 {}", .{resultingMovement});
 
 		if (collision.collides(side, dir, -amount, checkPos, hitBox)) |box| {
 			const newFloor = box.max[2] + hitBox.max[2] + epsilon;
 			const heightDifference = newFloor - checkPos[2];
+			std.log.debug("test point 2 {}", .{resultingMovement});
 			if (heightDifference <= steppingHeight) {
 				// If we collide but might be able to step up
 				checkPos[2] = newFloor;
@@ -297,6 +302,8 @@ pub const collision = struct { // MARK: collision
 				resultingMovement[index] = box.min[index] - hitBox.max[index] - pos[index] - epsilon;
 			}
 		}
+
+		std.log.debug("test point 3 {}", .{resultingMovement});
 
 		return resultingMovement;
 	}
@@ -524,7 +531,10 @@ pub fn calculateWallCollision(comptime side: main.sync.Side, motion: *Vec3d, pos
 	}
 	const slipLimit = 0.25*frictionState.current;
 
+	std.log.debug("is it here? {}", .{pos});
+
 	const xMovement = collision.collideOrStep(side, .x, motion[0], pos.*, hitBox, adjustedSteppingHeight);
+	std.log.debug("what is this? {}", .{xMovement});
 	pos.* += xMovement;
 	if (crouching and onGround.* and @abs(vel[0]) < slipLimit) {
 		if (collision.collides(side, .x, 0, pos.* - Vec3d{0, 0, 1}, hitBox) == null) {
@@ -532,6 +542,8 @@ pub fn calculateWallCollision(comptime side: main.sync.Side, motion: *Vec3d, pos
 			vel[0] = 0;
 		}
 	}
+
+	std.log.debug("or here? {}", .{pos});
 
 	const yMovement = collision.collideOrStep(side, .y, motion[1], pos.*, hitBox, adjustedSteppingHeight);
 	pos.* += yMovement;

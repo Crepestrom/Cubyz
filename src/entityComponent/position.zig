@@ -163,5 +163,6 @@ pub const server = struct {
 	fn setPosition(entity: Entity, givenPosition: Vec3d) void {
 		const positionComponent = components.get(entity) orelse return;
 		positionComponent.position = givenPosition;
+		main.entity.server.transmitChange(main.entity.components.@"cubyz:position", entity);
 	}
 };

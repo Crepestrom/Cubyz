@@ -20,3 +20,4 @@ pub const player_hitbox = @import("physics/player_hitbox.zig");
 pub const player_position_change = @import("physics/player_position_change.zig");
 pub const player_calculate_friction = @import("physics/player_calculate_friction.zig");
 pub const player_flying_friction_overide = @import("physics/player_flying_friction_overide.zig");
+pub const pavice_charging = @import("physics/pavice_charging.zig");
