@@ -58,17 +58,15 @@ pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
 
-	pub fn addHealthEventAddPhase() systems.RunOrderManager.Phase {
-		return .{.self = "blockReduce", .targetSortPhase = "end", .sortDirection = .before, .priority = 0};
-	}
+	pub const addHealthEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedPhase = .{.self = "blockReduce", .targetSortPhase = "end", .sortDirection = .before, .priority = 0},
+		.addedFunctionStep = .{.targetPhase = "blockReduce"},
+		.function = adjustHealthChange,
+	};
 
-	pub fn addHealthEventSubscribe() systems.RunOrderManager.FunctionStep {
-		return systems.RunOrderManager.FunctionStep{.targetPhase = "blockReduce"};
-	}
-
-	pub fn onAddHealth() void {
+	fn adjustHealthChange() void {
 		for (entity.components.@"cubyz:health_change".server.components.dense.items, entity.components.@"cubyz:health_change".server.components.denseToSparseIndex.items) |*component, id| {
-			const blockComponent = @"cubyz:weapon_blocking".server.get(id) orelse return;
+			const blockComponent = @"cubyz:weapon_blocking".server.get(id) orelse continue;
 			component.change = component.change*(1 - blockComponent.blockingPower);
 		}
 	}

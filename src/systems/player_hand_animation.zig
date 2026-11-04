@@ -60,11 +60,12 @@ pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
 
-	pub fn updateEventSubscribe() systems.RunOrderManager.FunctionStep {
-		return systems.RunOrderManager.FunctionStep{.targetPhase = "start"};
-	}
+	pub const updateEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedFunctionStep = .{.targetPhase = "start"},
+		.function = adjustAnimation,
+	};
 
-	pub fn onUpdate() void {
+	fn adjustAnimation() void {
 		for (@"cubyz:player_hand_animation".server.components.dense.items, entity.components.@"cubyz:player_hand_animation".server.components.denseToSparseIndex.items) |*component, id| {
 			component.updateAnimation(id);
 		}

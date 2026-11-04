@@ -58,25 +58,16 @@ pub const server = struct {
 	pub fn addEnergy(givenEntity: Entity, change: f32) void {
 		const startingTags: [0]main.Tag = .{};
 		main.entity.components.@"cubyz:resource_change".server.loadFromValues(givenEntity, change, &startingTags);
-		const onEventFunctionName: []const u8 = "onAddEnergy";
-		const subscribeFunctionName: []const u8 = "addEnergyEventSubscribe";
-		const addPhaseFunctionName: []const u8 = "addEnergyEventAddPhase";
-		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decl_names, subscribeFunctionName, addPhaseFunctionName);
-		inline for (sortedTypes) |decl| {
-			if (@hasDecl(@field(systems.systems, decl).server, onEventFunctionName)) {
-				@field(@field(systems.systems, decl).server, onEventFunctionName)();
-			} else {
-				continue;
-			}
-		}
+		systems.RunOrderManager.createBasicHook("addEnergyEvent", systems.systems, .server);
 		main.entity.components.@"cubyz:resource_change".server.unload(givenEntity);
 	}
 
-	pub fn addEnergyEventSubscribe() systems.RunOrderManager.FunctionStep {
-		return systems.RunOrderManager.FunctionStep{.targetPhase = "end"};
-	}
+	pub const addEnergyEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedFunctionStep = .{.targetPhase = "end"},
+		.function = adjustEnergyChange,
+	};
 
-	pub fn onAddEnergy() void {
+	fn adjustEnergyChange() void {
 		for (entity.components.@"cubyz:resource_change".server.components.dense.items, entity.components.@"cubyz:resource_change".server.components.denseToSparseIndex.items) |component, id| {
 			main.entity.components.@"cubyz:energy".server.addEnergy(id, component.change);
 		}

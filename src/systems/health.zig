@@ -58,27 +58,18 @@ pub const server = struct {
 	pub fn addHealth(givenEntity: Entity, change: f32, cause: main.game.DamageType) bool {
 		const startingTags: [0]main.Tag = .{};
 		main.entity.components.@"cubyz:health_change".server.loadFromValues(givenEntity, change, cause, &startingTags);
-		const onEventFunctionName: []const u8 = "onAddHealth";
-		const subscribeFunctionName: []const u8 = "addHealthEventSubscribe";
-		const addPhaseFunctionName: []const u8 = "addHealthEventAddPhase";
-		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decl_names, subscribeFunctionName, addPhaseFunctionName);
-		inline for (sortedTypes) |decl| {
-			if (@hasDecl(@field(systems.systems, decl).server, onEventFunctionName)) {
-				@field(@field(systems.systems, decl).server, onEventFunctionName)();
-			} else {
-				continue;
-			}
-		}
-		std.log.debug("took damage {}", .{(main.entity.components.@"cubyz:health".server.get(givenEntity) orelse return false).health});
+		systems.RunOrderManager.createBasicHook("addHealthEvent", systems.systems, .server);
+		std.log.debug("testing this", .{});
 		main.entity.components.@"cubyz:health_change".server.unload(givenEntity);
 		return ((main.entity.components.@"cubyz:health".server.get(givenEntity) orelse return false).health == 0);
 	}
 
-	pub fn addHealthEventSubscribe() systems.RunOrderManager.FunctionStep {
-		return systems.RunOrderManager.FunctionStep{.targetPhase = "end"};
-	}
+	pub const addHealthEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedFunctionStep = .{.targetPhase = "end"},
+		.function = adjustHealthChange,
+	};
 
-	pub fn onAddHealth() void {
+	fn adjustHealthChange() void {
 		for (entity.components.@"cubyz:health_change".server.components.dense.items, entity.components.@"cubyz:health_change".server.components.denseToSparseIndex.items) |component, id| {
 			std.log.debug("now it is adding health to the player {}", .{component.change});
 			main.entity.components.@"cubyz:health".server.addHealth(id, component.change);

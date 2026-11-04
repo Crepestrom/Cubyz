@@ -54,16 +54,6 @@ pub const server = struct {
 	pub fn deinit() void {}
 
 	pub fn update() void {
-		const onEventFunctionName: []const u8 = "onUpdate";
-		const subscribeFunctionName: []const u8 = "updateEventSubscribe";
-		const addPhaseFunctionName: []const u8 = "updateEventAddPhase";
-		const sortedTypes = comptime systems.RunOrderManager.getSortedOrder(@typeInfo(systems.systems).@"struct".decl_names, subscribeFunctionName, addPhaseFunctionName);
-		inline for (sortedTypes) |decl| {
-			if (@hasDecl(@field(systems.systems, decl).server, onEventFunctionName)) {
-				@field(@field(systems.systems, decl).server, onEventFunctionName)();
-			} else {
-				continue;
-			}
-		}
+		systems.RunOrderManager.createBasicHook("updateEvent", systems.systems, .server);
 	}
 };
