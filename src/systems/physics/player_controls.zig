@@ -57,20 +57,14 @@ pub const client = struct {
 	}
 
 	pub const onPhysicsUpdate: systems.RunOrderManager.FunctionHook(fn(deltaTime: f64) void) = .{
-		.addedPhase = .{.self = "playerControls", .targetSortPhase = "start", .sortDirection = .after, .priority = 0},
+		.addedPhase = .{.self = "playerControls", .targetSortPhase = "calculateFriction", .sortDirection = .after, .priority = 0},
 		.addedFunctionStep = .{.targetPhase = "playerControls"},
 		.function = update,
 	};
 
 	fn update(deltaTime: f64) void {
-		std.log.debug("testing", .{});
 		const playerPos = @"cubyz:position".getPositionPointer(main.game.player.id, .client).?;
 		main.physics.calculateVolumeProperties(.client, &main.game.player.volumeProperties, playerPos.*, main.game.player.outerBoundingBox, main.physics.playerAirTerminalVelocity);
-		if (main.game.player.isFlying.load(.monotonic)) {
-			main.game.player.friction = .{.current = 20, .mobile = 20};
-		} else {
-			main.physics.calculateFriction(.client, &main.game.player.volumeProperties, &main.game.player.friction, playerPos.*, main.game.player.outerBoundingBox, main.game.player.onGround);
-		}
 		main.game.player.acc = Vec3d{0, 0, 0};
 		const speedMultiplier: f32 = if (main.game.player.hyperSpeed.load(.monotonic)) 4.0 else 1.0;
 
