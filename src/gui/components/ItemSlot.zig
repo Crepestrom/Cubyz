@@ -63,7 +63,7 @@ pub fn globalInit() void {
 	craftingResultTexture = Texture.initFromFile("assets/cubyz/ui/inventory/crafting_result_slot.png");
 }
 
-pub fn __deinit() void {
+pub fn globalDeinit() void {
 	defaultTexture.deinit();
 	immutableTexture.deinit();
 	craftingResultTexture.deinit();
@@ -129,26 +129,25 @@ pub fn mainButtonReleased(self: *ItemSlot, _: Vec2f) void {
 	}
 }
 
-pub fn render(self: *ItemSlot, _: Vec2f) void {
+pub fn render(self: *ItemSlot, currentFrame: *graphics.vulkan.Frame, _: Vec2f) void {
 	self.refreshText();
-	draw.setColor(0xffffffff);
 	if (self.renderFrame and self.texture != null) {
-		self.texture.?.bindTo(0);
-		draw.boundImage(self.pos, self.size);
+		draw.image(currentFrame, self.texture.?, self.pos, self.size);
 	}
 	const item = self.inventory.getItem(self.itemSlot);
 	if (item != .null) {
-		item.render(self.pos, self.size, border);
+		item.render(currentFrame, self.pos, self.size, border);
 		const shouldRenderStackSizeText = item.stackSize() > 1 and self.inventory.type != .creative;
 		if (shouldRenderStackSizeText) {
-			self.text.render(self.pos[0] + self.size[0] - self.textSize[0] - border, self.pos[1] + self.size[1] - self.textSize[1] - border, 8);
+			self.text.render(currentFrame, self.pos[0] + self.size[0] - self.textSize[0] - border, self.pos[1] + self.size[1] - self.textSize[1] - border, 8);
 		}
 	}
 	if (self.mode != .immutable) {
 		if (self.hovered) {
 			self.hovered = false;
-			draw.setColor(0x300000ff);
-			draw.rect(self.pos, self.size);
+			const oldColor = draw.setColor(0x300000ff);
+			defer draw.restoreColor(oldColor);
+			draw.rect(currentFrame, self.pos, self.size);
 		}
 	}
 }

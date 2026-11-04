@@ -5,12 +5,10 @@ const page_size_min = std.heap.page_size_min;
 const page_size_max = std.heap.page_size_max;
 const pageSize = std.heap.pageSize;
 
-const c = @cImport({
-	@cInclude("memoryapi.h");
-});
+const c = @import("c");
 
 fn reserveMemory(len: usize) [*]align(page_size_min) u8 {
-	if (builtin.os.tag == .windows) {
+	if (builtin.target.os.tag == .windows) {
 		return @ptrCast(@alignCast(c.VirtualAlloc(null, len, c.MEM_RESERVE, c.PAGE_READWRITE) orelse {
 			const err = std.os.windows.GetLastError();
 			std.log.err("Got error while reserving virtual memory of size {}: {s}", .{len, @tagName(err)});
@@ -25,7 +23,7 @@ fn reserveMemory(len: usize) [*]align(page_size_min) u8 {
 }
 
 fn commitMemory(start: [*]align(page_size_min) u8, len: usize) void {
-	if (builtin.os.tag == .windows) {
+	if (builtin.target.os.tag == .windows) {
 		_ = c.VirtualAlloc(start, len, c.MEM_COMMIT, c.PAGE_READWRITE) orelse {
 			const err = std.os.windows.GetLastError();
 			std.log.err("Got error while committing virtual memory of size {}: {s}.", .{len, @tagName(err)});
@@ -41,7 +39,7 @@ fn commitMemory(start: [*]align(page_size_min) u8, len: usize) void {
 }
 
 fn releaseMemory(start: [*]align(page_size_min) u8, len: usize) void {
-	if (builtin.os.tag == .windows) {
+	if (builtin.target.os.tag == .windows) {
 		const result = c.VirtualFree(start, 0, c.MEM_RELEASE);
 		if (result == 0) {
 			const err = std.os.windows.GetLastError();
@@ -210,16 +208,16 @@ pub fn VirtualList(T: type, maxSize: u32) type {
 		}
 
 		pub fn pop(self: *@This()) T {
-			return self.popOrNull() orelse unreachable;
+			return self.popOrNull().?;
 		}
 
 		pub fn replaceRange(self: *@This(), start: usize, len: usize, new_items: []const T) void {
 			const after_range = start + len;
 			const range = self.items()[start..after_range];
 
-			if (range.len == new_items.len)
-				@memcpy(range[0..new_items.len], new_items)
-			else if (range.len < new_items.len) {
+			if (range.len == new_items.len) {
+				@memcpy(range[0..new_items.len], new_items);
+			} else if (range.len < new_items.len) {
 				const first = new_items[0..range.len];
 				const rest = new_items[range.len..];
 
@@ -235,21 +233,6 @@ pub fn VirtualList(T: type, maxSize: u32) type {
 
 				self.len -= len - new_items.len;
 			}
-		}
-
-		pub const Writer = if (T != u8)
-			@compileError("The Writer interface is only defined for ArrayList(u8) " ++
-				"but the given type is ArrayList(" ++ @typeName(T) ++ ")")
-		else
-			std.io.Writer(*@This(), error{}, appendWrite);
-
-		pub fn writer(self: *@This()) Writer {
-			return .{.context = self};
-		}
-
-		fn appendWrite(self: *@This(), m: []const u8) !usize {
-			self.appendSlice(m);
-			return m.len;
 		}
 	};
 }

@@ -17,7 +17,6 @@ const Label = GuiComponent.Label;
 const DiscreteSlider = @This();
 
 const border: f32 = 3;
-const fontSize: f32 = 16;
 
 var texture: Texture = undefined;
 
@@ -36,7 +35,7 @@ pub fn globalInit() void {
 	texture = Texture.initFromFile("assets/cubyz/ui/slider.png");
 }
 
-pub fn __deinit() void {
+pub fn globalDeinit() void {
 	texture.deinit();
 }
 
@@ -44,7 +43,7 @@ pub fn init(pos: Vec2f, width: f32, text: []const u8, comptime fmt: []const u8, 
 	const values = main.globalAllocator.alloc([]const u8, valueList.len);
 	var maxLen: usize = 0;
 	for (valueList, 0..) |value, i| {
-		values[i] = std.fmt.allocPrint(main.globalAllocator.allocator, fmt, .{value}) catch unreachable;
+		values[i] = main.globalAllocator.print(fmt, .{value});
 		maxLen = @max(maxLen, values[i].len);
 	}
 
@@ -152,17 +151,27 @@ pub fn mainButtonReleased(self: *DiscreteSlider, _: Vec2f) void {
 	self.button.mainButtonReleased(undefined);
 }
 
-pub fn render(self: *DiscreteSlider, mousePosition: Vec2f) void {
-	texture.bindTo(0);
-	Button.pipeline.bind(draw.getScissor());
-	draw.setColor(0xff000000);
-	draw.customShadedRect(Button.buttonUniforms, self.pos, self.size);
+pub fn render(self: *DiscreteSlider, currentFrame: *graphics.vulkan.Frame, mousePosition: Vec2f) void {
+	if (main.settings.launch_config.vulkanTestingMode and texture.vulkanImage != null) {
+		currentFrame.guiCommands.bindPipeline(currentFrame, Button.pipeline, graphics.draw.getScissor());
+		currentFrame.guiCommands.bindDescriptors(Button.pipeline, .graphics, &.{
+			.{.image = .{.binding = 0, .image = texture.vulkanImage.?}},
+		});
+		draw.customShadedRect(currentFrame, @as(Button.ButtonUniforms, undefined), Button.pipeline, self.pos, self.size);
+	} else {
+		Button.pipeline.bind(draw.getScissor());
+		texture.bindTo(0);
+		draw.customShadedRectOpenGl(Button.buttonUniforms, self.pos, self.size);
+	}
 
-	draw.setColor(0x80000000);
-	draw.rect(self.pos + self.getBarPos(), self.getBarSize());
+	{
+		const oldColor = draw.setColor(0x80000000);
+		defer draw.restoreColor(oldColor);
+		draw.rect(currentFrame, self.pos + self.getBarPos(), self.getBarSize());
+	}
 
 	self.label.pos = self.pos + @as(Vec2f, @splat(1.5*border));
-	self.label.render(mousePosition);
+	self.label.render(currentFrame, mousePosition);
 
 	if (self.button.pressed) {
 		self.button.pos[0] = mousePosition[0] - self.mouseAnchor;
@@ -171,5 +180,5 @@ pub fn render(self: *DiscreteSlider, mousePosition: Vec2f) void {
 	}
 	const oldTranslation = draw.setTranslation(self.pos);
 	defer draw.restoreTranslation(oldTranslation);
-	self.button.render(mousePosition - self.pos);
+	self.button.render(currentFrame, mousePosition - self.pos);
 }

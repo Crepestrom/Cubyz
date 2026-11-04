@@ -30,7 +30,7 @@ pub fn globalInit() void {
 	texture = Texture.initFromFile("assets/cubyz/ui/inventory/bag_slot.png");
 }
 
-pub fn __deinit() void {
+pub fn globalDeinit() void {
 	texture.deinit();
 }
 
@@ -67,27 +67,31 @@ pub fn mainButtonReleased(self: *BagSlot, mousePosition: Vec2f) void {
 		self.pressed = false;
 		if (GuiComponent.contains(self.pos, self.size, mousePosition)) {
 			const carried = gui.inventory.carried;
+			if (main.keyboard.key("mainGuiButton").modsOnPress.shift) {
+				main.sync.client.executeCommand(.{.takeFromPlayerBag = .init(&.{main.game.player.inventory}, std.math.maxInt(u16))});
+				return;
+			}
 			if (carried.getAmount(0) != 0) {
-				main.sync.ClientSide.executeCommand(.{.moveToPlayerBag = .{.amount = carried.getAmount(0), .source = .{.inv = carried.super, .slot = 0}}});
+				main.sync.client.executeCommand(.{.moveToPlayerBag = .{.amount = carried.getAmount(0), .source = .{.inv = carried.super, .slot = 0}}});
 			} else {
-				main.sync.ClientSide.executeCommand(.{.takeFromPlayerBag = .init(&.{carried}, std.math.maxInt(u16))});
+				main.sync.client.executeCommand(.{.takeFromPlayerBag = .init(&.{carried}, std.math.maxInt(u16))});
 			}
 		}
 	}
 }
 
-pub fn render(self: *BagSlot, _: Vec2f) void {
-	draw.setColor(0xffffffff);
+pub fn render(self: *BagSlot, currentFrame: *graphics.vulkan.Frame, _: Vec2f) void {
 	texture.bindTo(0);
-	draw.boundImage(self.pos, @splat(sizeWithBorder));
+	draw.image(currentFrame, texture, self.pos, @splat(sizeWithBorder));
 
 	for (0..5) |_i| {
 		const i = 4 - _i;
 		const item = self.inventory.peek(i).item;
 		if (item == .null) continue;
 		const opacity: f32 = std.math.pow(f32, 0.5, @as(f32, @floatFromInt(i)));
-		draw.setColor(0xffffff | @as(u32, @trunc(opacity*255)) << 24);
-		item.render(self.pos, @splat(sizeWithBorder), border);
+		const oldColor = draw.setColor(0xffffff | @as(u32, @trunc(opacity*255)) << 24);
+		defer draw.restoreColor(oldColor);
+		item.render(currentFrame, self.pos, @splat(sizeWithBorder), border);
 	}
 
 	const topItem = self.inventory.peek(0);
@@ -109,15 +113,15 @@ pub fn render(self: *BagSlot, _: Vec2f) void {
 		);
 		defer text.deinit();
 		const textSize = text.calculateLineBreaks(8, self.size[0] - 2*border);
-		text.render(self.pos[0] + sizeWithBorder - textSize[0] - border, self.pos[1] + sizeWithBorder - textSize[1] - border, 8);
+		text.render(currentFrame, self.pos[0] + sizeWithBorder - textSize[0] - border, self.pos[1] + sizeWithBorder - textSize[1] - border, 8);
 	}
 
-	draw.setColor(0xffffffff);
-	draw.print("{}/{}", .{self.inventory.slots.items.len, self.inventory.sizeLimit}, self.pos[0], self.pos[1] + sizeWithBorder, 8, .left);
+	draw.print(currentFrame, "{}/{}", .{self.inventory.slots.items.len, self.inventory.sizeLimit}, self.pos[0], self.pos[1] + sizeWithBorder, 8);
 
 	if (self.hovered) {
 		self.hovered = false;
-		draw.setColor(0x300000ff);
-		draw.rect(self.pos, @splat(sizeWithBorder));
+		const oldColor = draw.setColor(0x300000ff);
+		defer draw.restoreColor(oldColor);
+		draw.rect(currentFrame, self.pos, @splat(sizeWithBorder));
 	}
 }
