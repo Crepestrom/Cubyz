@@ -89,14 +89,15 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		const startingArray: [0][]const u8 = .{};
 		var phaseNameIds: []const[]const u8 = &startingArray;
 		PhaseType.initPhaseTypes(&phaseNameIds);
-		const sortedPhases = sortPhases(declarationNames, &phaseNameIds, serverOrClient, targetHookName);
-		const functionSteps = getFunctionSteps(declarationNames, serverOrClient, targetHookName);
+		const functionHookPeices = getFunctionHooks(declarationNames, &phaseNameIds, serverOrClient, targetHookName);
+
+		functionStepsHaveValidPhasesCheck(functionHookPeices.functionSteps, &phaseNameIds);
 
 		var intermediary: [0][:0]const u8 = .{};
 		var sortedFunctionSteps: []const [:0]const u8 = &intermediary;
-		for (sortedPhases) |phase| {
-			for (functionSteps) |functionStep| {
-				if (PhaseType.fromFunctionStep(functionStep.targetPhase, &phaseNameIds) == PhaseType.fromFunctionStep(phase.self, &phaseNameIds)) {
+		for (functionHookPeices.sortedPhases) |phase| {
+			for (functionHookPeices.functionSteps) |functionStep| {
+				if (std.mem.eql(u8, phase.self, functionStep.targetPhase)) {
 					addToDeclarationArray(&sortedFunctionSteps, declarationNames[functionStep.order]);
 				}
 			}
@@ -104,30 +105,9 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		return sortedFunctionSteps;
 	}
 
-	fn getFunctionSteps(comptime declarationNames: []const [:0]const u8, serverOrClient: []const u8, targetHookName: []const u8) []const FunctionStep {
-		const startingList: [0]FunctionStep = .{};
-		var stepList: []const FunctionStep = &startingList;
-		for (declarationNames, 0..) |decl, i| {
-			if (@hasDecl(@field(@field(systems, decl), serverOrClient), targetHookName)) {
-				var newStep: FunctionStep = @field(@field(@field(@field(systems, decl), serverOrClient), targetHookName), "addedFunctionStep");
-				newStep.order = i;
-				addToStepArray(&stepList, newStep);
-			} else {
-				continue;
-			}
-		}
-		return stepList;
-	}
-
-	fn sortPhases(comptime declarationNames: []const [:0]const u8, phaseNameIds: *[]const[]const u8, serverOrClient: []const u8, targetHookName: []const u8) []const Phase {
-		const phaseList = getPhases(declarationNames, phaseNameIds, serverOrClient, targetHookName);
-		const ctx: SortContext = .{.phaseNameIds = phaseNameIds.*};
-		std.sort.insertion(Phase, phaseList, ctx, SortContext.lessThan);
-		return phaseList;
-	}
-
-	fn getPhases(comptime declarationNames: []const [:0]const u8, phaseNameIds: *[]const[]const u8, serverOrClient: []const u8, targetHookName: []const u8) []Phase {
-		var startingList: [2]Phase = .{Phase{
+	fn getFunctionHooks(comptime declarationNames: []const [:0]const u8, phaseNameIds: *[]const[]const u8, serverOrClient: []const u8, targetHookName: []const u8) struct {sortedPhases: []const Phase, functionSteps: []const FunctionStep} {
+		const startingFunctionStepList: [0]FunctionStep = .{};
+		var startingPhaseList: [2]Phase = .{Phase{
 			.sortDirection = .before,
 			.self = "start",
 			.targetSortPhase = "end",
@@ -139,17 +119,29 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 			.targetSortPhase = "start",
 			.priority = std.math.minInt(i32),
 		}};
-		var phaseList: []Phase = &startingList;
-		for (declarationNames) |decl| {
+		var stepList: []const FunctionStep = &startingFunctionStepList;
+		var phaseList: []Phase = &startingPhaseList;
+		for (declarationNames, 0..) |decl, i| {
 			if (@hasDecl(@field(@field(systems, decl), serverOrClient), targetHookName)) {
 				const newPhase: Phase = @field(@field(@field(@field(systems, decl), serverOrClient), targetHookName), "addedPhase") orelse continue;
+				var newStep: FunctionStep = @field(@field(@field(@field(systems, decl), serverOrClient), targetHookName), "addedFunctionStep");
+				newStep.order = i;
 				_ = PhaseType.findFromName(newPhase.self, phaseNameIds);
+				addToStepArray(&stepList, newStep);
 				addToPhaseArray(&phaseList, newPhase);
 			} else {
 				continue;
 			}
 		}
-		return phaseList;
+		const ctx: SortContext = .{.phaseNameIds = phaseNameIds.*};
+		std.sort.insertion(Phase, phaseList, ctx, SortContext.lessThan);
+		return .{.sortedPhases = phaseList, .functionSteps = stepList};
+	}
+
+	fn functionStepsHaveValidPhasesCheck(functionSteps: []const FunctionStep, phaseNameIds: *[]const[]const u8) void {
+		for (functionSteps) |functionStep| {
+			_ = PhaseType.fromFunctionStep(functionStep.targetPhase, phaseNameIds);
+		}
 	}
 
 	fn addToPhaseNameArray(phaseArray: *[]const[]const u8, addedPhase: []const u8) void {
@@ -190,7 +182,7 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 
 		fn lessThan(self: @This(), a: Phase, b: Phase) bool {
 			return compare(self, a, b) orelse {
-				return !compare(self, b, a) orelse true;
+				return !(compare(self, b, a) orelse true);
 			};
 		}
 
@@ -242,7 +234,7 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		}
 
 		pub fn fromFunctionStep(comptime tag: []const u8, phaseNameIds: *[]const[]const u8) PhaseType {
-			return get(tag, phaseNameIds.*) orelse @compileError("FunctionStep tried to initalize a missing Phase '" ++ tag ++ "'. did you forget to add it?");
+			return get(tag, phaseNameIds.*) orelse @compileError("FunctionStep tried to initalize a missing Phase '" ++ tag ++ "'. did you forget to add that Phase?");
 		}
 
 		pub fn fromSelfSortPhase(comptime tag: []const u8, phaseNameIds: []const[]const u8) PhaseType {

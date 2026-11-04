@@ -16,3 +16,7 @@ pub const pavice = @import("weapons/pavice.zig");
 pub const warhammer = @import("weapons/warhammer.zig");
 
 pub const player_controls = @import("physics/player_controls.zig");
+pub const player_hitbox = @import("physics/player_hitbox.zig");
+pub const player_position_change = @import("physics/player_position_change.zig");
+pub const player_calculate_friction = @import("physics/player_calculate_friction.zig");
+pub const player_flying_friction_overide = @import("physics/player_flying_friction_overide.zig");
