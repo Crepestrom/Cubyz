@@ -77,7 +77,7 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		const sideName = @tagName(side);
 		const sortedTypes = comptime RunOrderManager.getSortedOrder(@typeInfo(systemList).@"struct".decl_names, sideName, onEventName);
 		inline for (sortedTypes) |decl| {
-			if (@hasDecl(@field(systemList, decl).server, onEventName)) {
+			if (@hasDecl(@field(@field(systemList, decl), sideName), onEventName)) {
 				@field(@field(@field(@field(systemList, decl), sideName), onEventName), "function")();
 			} else {
 				continue;

@@ -96,6 +96,7 @@ pub const player = struct { // MARK: player
 	pub var selectedSlot: u32 = 0;
 	pub const defaultBlockDamage: f32 = 1;
 	pub var inputSpeed: f64 = 0;
+	pub var acc: Vec3d = .{0, 0, 0};
 
 	pub var selectionPosition1: ?Vec3i = null;
 	pub var selectionPosition2: ?Vec3i = null;
@@ -104,6 +105,7 @@ pub const player = struct { // MARK: player
 	pub var volumeProperties: physics.collision.VolumeProperties = .{.density = 0, .maxDensity = 0, .mobileFriction = 0, .terminalVelocity = 0};
 
 	pub var onGround: bool = false;
+	pub var jumping: bool = false;
 	pub var jumpCooldown: f64 = 0;
 	pub var jumpCoyote: f64 = 0;
 	pub const jumpCooldownConstant = 0.3;
@@ -655,136 +657,8 @@ pub fn update(deltaTime: f64) void { // MARK: update()
 	} else {
 		physics.calculateFriction(.client, &player.volumeProperties, &player.friction, playerPos.*, player.outerBoundingBox, player.onGround);
 	}
-	var acc = Vec3d{0, 0, 0};
-	const speedMultiplier: f32 = if (player.hyperSpeed.load(.monotonic)) 4.0 else 1.0;
 
-	const density = if (player.isFlying.load(.monotonic)) 0.0 else player.volumeProperties.density;
-	const maxDensity = if (player.isFlying.load(.monotonic)) 0.0 else player.volumeProperties.maxDensity;
-
-	var jumping = false;
-	player.jumpCooldown -= deltaTime;
-	// At equillibrium we want to have dv/dt = a - λv = 0 → a = λ*v
-	const fricMul = speedMultiplier*player.friction.mobile;
-
-	const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -camera.rotation[2]);
-	const forward = vec.normalize(std.math.lerp(horizontalForward, camera.direction, @as(Vec3d, @splat(density/@max(1.0, maxDensity)))));
-	const right = Vec3d{-horizontalForward[1], horizontalForward[0], 0};
-	var movementDir: Vec3d = .{0, 0, 0};
-
-	player.inputSpeed = 0;
-
-	if (main.Window.grabbed) {
-		const walkingSpeed: f64 = if (player.crouching) 2.5 else 4.5;
-		var movementSpeed: f64 = walkingSpeed*@min(1, vec.length(Vec2f{
-			@max(keyboard.key("forward").value, keyboard.key("backward").value),
-			@max(keyboard.key("left").value, keyboard.key("right").value),
-		}));
-
-		var isSprintingOnGround = false;
-		var speedModifier = walkingSpeed;
-		if (keyboard.key("sprint").pressed and !player.crouching) {
-			if (player.isGhost.load(.monotonic)) {
-				speedModifier = 128;
-			} else if (player.isFlying.load(.monotonic)) {
-				speedModifier = 32;
-			} else {
-				isSprintingOnGround = true;
-			}
-		}
-
-		if (keyboard.key("forward").value > 0.0) {
-			var forwardSpeedModifier = speedModifier;
-			if (isSprintingOnGround) forwardSpeedModifier = 8;
-
-			const totalSpeed = forwardSpeedModifier*keyboard.key("forward").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += forward*@as(Vec3d, @splat(totalSpeed));
-		}
-		if (keyboard.key("backward").value > 0.0) {
-			const totalSpeed = speedModifier*keyboard.key("backward").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += forward*@as(Vec3d, @splat(-totalSpeed));
-		}
-		if (keyboard.key("left").value > 0.0) {
-			const totalSpeed = speedModifier*keyboard.key("left").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += right*@as(Vec3d, @splat(totalSpeed));
-		}
-		if (keyboard.key("right").value > 0.0) {
-			const totalSpeed = speedModifier*keyboard.key("right").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += right*@as(Vec3d, @splat(-totalSpeed));
-		}
-		if (keyboard.key("jump").pressed) {
-			if (player.isFlying.load(.monotonic)) {
-				if (keyboard.key("sprint").pressed) {
-					if (player.isGhost.load(.monotonic)) {
-						movementSpeed = @max(movementSpeed, 60);
-						movementDir[2] += 60;
-					} else {
-						movementSpeed = @max(movementSpeed, 25);
-						movementDir[2] += 25;
-					}
-				} else {
-					movementSpeed = @max(movementSpeed, 5.5);
-					movementDir[2] += 5.5;
-				}
-			} else if ((player.onGround or player.jumpCoyote > 0.0) and player.jumpCooldown <= 0) {
-				jumping = true;
-				player.jumpCooldown = player.jumpCooldownConstant;
-				if (!player.onGround) {
-					player.eye.coyote = 0;
-				}
-				player.jumpCoyote = 0;
-			} else if (!keyboard.key("fall").pressed) {
-				movementSpeed = @max(movementSpeed, walkingSpeed);
-				movementDir[2] += walkingSpeed;
-			}
-		} else {
-			player.jumpCooldown = 0;
-		}
-		if (keyboard.key("fall").pressed) {
-			if (player.isFlying.load(.monotonic)) {
-				if (keyboard.key("sprint").pressed) {
-					if (player.isGhost.load(.monotonic)) {
-						movementSpeed = @max(movementSpeed, 60);
-						movementDir[2] -= 60;
-					} else {
-						movementSpeed = @max(movementSpeed, 25);
-						movementDir[2] -= 25;
-					}
-				} else {
-					movementSpeed = @max(movementSpeed, 5.5);
-					movementDir[2] -= 5.5;
-				}
-			} else if (!keyboard.key("jump").pressed) {
-				movementSpeed = @max(movementSpeed, walkingSpeed);
-				movementDir[2] -= walkingSpeed;
-			}
-		}
-
-		if (movementSpeed != 0 and vec.lengthSquare(movementDir) != 0) {
-			if (vec.lengthSquare(movementDir) > movementSpeed*movementSpeed) {
-				movementDir = vec.normalize(movementDir);
-			} else {
-				movementDir /= @splat(movementSpeed);
-			}
-			acc += movementDir*@as(Vec3d, @splat(movementSpeed*fricMul));
-		}
-
-		const newSlot: i32 = @as(i32, @intCast(player.selectedSlot)) -% main.Window.scrollOffsetInteger;
-		player.selectedSlot = @intCast(@mod(newSlot, 12));
-
-		const newPos = Vec2f{
-			@floatCast(main.keyboard.key("cameraRight").value - main.keyboard.key("cameraLeft").value),
-			@floatCast(main.keyboard.key("cameraDown").value - main.keyboard.key("cameraUp").value),
-		}*@as(Vec2f, @splat(std.math.pi*settings.controllerSensitivity));
-		main.game.camera.moveRotation(newPos[0]/64.0, newPos[1]/64.0);
-
-		player.inputSpeed = movementSpeed*speedMultiplier;
-	}
-
-	player.crouching = main.Window.grabbed and keyboard.key("crouch").pressed and !player.isFlying.load(.monotonic);
+	main.systems.systems.physics.client.update(deltaTime);
 
 	if (physics.collision.collides(.client, .x, 0, playerPos.* + player.standingBoundingBoxExtent - player.crouchingBoundingBoxExtent, .{
 		.min = -player.standingBoundingBoxExtent,
@@ -819,8 +693,8 @@ pub fn update(deltaTime: f64) void { // MARK: update()
 	}
 
 	const gravity: f64 = if (player.isFlying.load(.monotonic)) 0.0 else physics.baseGravity;
-	const jumpHeight: f64 = if (jumping) player.jumpHeight else 0.0;
-	var motion = physics.calculateMotion(.client, deltaTime, player.friction, player.volumeProperties, physics.playerDensity, playerPos.*, playerVel, acc, gravity, jumpHeight);
+	const jumpHeight: f64 = if (player.jumping) player.jumpHeight else 0.0;
+	var motion = physics.calculateMotion(.client, deltaTime, player.friction, player.volumeProperties, physics.playerDensity, playerPos.*, playerVel, player.acc, gravity, jumpHeight);
 
 	{
 		player.mutex.lock();
