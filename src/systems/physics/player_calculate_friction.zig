@@ -66,8 +66,21 @@ pub const client = struct {
 
 	fn update(deltaTime: f64) void {
 		_ = deltaTime;
+		systems.RunOrderManager.createBasicHook("calculateFriction", systems.systems, .client);
+	}
+
+	pub const calculateFriction: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedPhase = .{.self = "fromVolumeProperties", .targetSortPhase = "start", .sortDirection = .after, .priority = 0},
+		.addedFunctionStep = .{.targetPhase = "fromVolumeProperties"},
+		.function = friction,
+	};
+
+	fn friction() void {
 		const playerPos = @"cubyz:position".getPositionPointer(player.id, .client).?;
+		physics.calculateVolumeProperties(.client, &player.volumeProperties, playerPos.*, player.outerBoundingBox, physics.playerAirTerminalVelocity);
 		physics.calculateFriction(.client, &player.volumeProperties, &player.friction, playerPos.*, player.outerBoundingBox, player.onGround);
+		std.log.debug("player.volumeProperties {}", .{player.volumeProperties.terminalVelocity});
+		std.log.debug("calculated friction {}", .{player.friction});
 	}
 };
 // ############################# Server only stuff ################################

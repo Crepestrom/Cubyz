@@ -63,8 +63,6 @@ pub const client = struct {
 	};
 
 	fn update(deltaTime: f64) void {
-		const playerPos = @"cubyz:position".getPositionPointer(main.game.player.id, .client).?;
-		main.physics.calculateVolumeProperties(.client, &main.game.player.volumeProperties, playerPos.*, main.game.player.outerBoundingBox, main.physics.playerAirTerminalVelocity);
 		main.game.player.acc = Vec3d{0, 0, 0};
 		const speedMultiplier: f32 = if (main.game.player.hyperSpeed.load(.monotonic)) 4.0 else 1.0;
 

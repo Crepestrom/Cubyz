@@ -197,10 +197,7 @@ pub const server = struct {
 	fn charge(givenEntity: Entity) void {
 		std.log.debug("charging", .{});
 		const entityPos: Vec3d = @"cubyz:position".getPosition(givenEntity, .server) orelse return;
-		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
-		const chargePower = 30;
 		@"cubyz:position".setPosition(givenEntity, entityPos, .server);
-		@"cubyz:velocity".addVelocity(givenEntity, horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
 		@"cubyz:pavice_charging".server.add(givenEntity, 20);
 	}
 

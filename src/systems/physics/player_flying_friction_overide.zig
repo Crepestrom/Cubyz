@@ -58,14 +58,13 @@ pub const client = struct {
 		_ = playerPos;
 	}
 
-	pub const onPhysicsUpdate: systems.RunOrderManager.FunctionHook(fn(deltaTime: f64) void) = .{
-		.addedPhase = .{.self = "flyingFrictionOverride", .targetSortPhase = "calculateFriction", .sortDirection = .after, .priority = 10},
+	pub const calculateFriction: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedPhase = .{.self = "flyingFrictionOverride", .targetSortPhase = "fromVolumeProperties", .sortDirection = .after, .priority = 0},
 		.addedFunctionStep = .{.targetPhase = "flyingFrictionOverride"},
 		.function = update,
 	};
 
-	fn update(deltaTime: f64) void {
-		_ = deltaTime;
+	fn update() void {
 		if (player.isFlying.load(.monotonic)) {
 			player.friction = .{.current = 20, .mobile = 20};
 		}

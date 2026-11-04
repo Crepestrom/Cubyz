@@ -60,12 +60,6 @@ pub const client = struct {
 		_ = playerPos;
 	}
 
-	pub const onPhysicsUpdate: systems.RunOrderManager.FunctionHook(fn(deltaTime: f64) void) = .{
-		.addedPhase = .{.self = "paviceChargeFrictionOverride", .targetSortPhase = "calculateFriction", .sortDirection = .after, .priority = 20},
-		.addedFunctionStep = .{.targetPhase = "paviceChargeFrictionOverride"},
-		.function = update,
-	};
-
 	fn update(deltaTime: f64) void {
 		_ = deltaTime;
 		if (@"cubyz:pavice_charging".client.get(main.game.player.id) != null) {

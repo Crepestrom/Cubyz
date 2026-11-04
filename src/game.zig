@@ -101,8 +101,8 @@ pub const player = struct { // MARK: player
 	pub var selectionPosition1: ?Vec3i = null;
 	pub var selectionPosition2: ?Vec3i = null;
 
-	pub var friction: physics.FrictionState = .{.current = 0, .mobile = 0};
-	pub var volumeProperties: physics.collision.VolumeProperties = .{.density = 0, .maxDensity = 0, .mobileFriction = 0, .terminalVelocity = 0};
+	pub var friction: physics.FrictionState = .{.current = 1, .mobile = 1};
+	pub var volumeProperties: physics.collision.VolumeProperties = .{.density = 0, .maxDensity = 0, .mobileFriction = 0, .terminalVelocity = 1};
 
 	pub var onGround: bool = false;
 	pub var jumping: bool = false;
@@ -648,9 +648,6 @@ pub fn update(deltaTime: f64) void { // MARK: update()
 		main.exitToMenu();
 		return;
 	};
-
-	const playerPos = @"cubyz:position".getPositionPointer(player.id, .client).?;
-	physics.calculateVolumeProperties(.client, &player.volumeProperties, playerPos.*, player.outerBoundingBox, physics.playerAirTerminalVelocity);
 
 	main.systems.systems.physics.client.update(deltaTime);
 

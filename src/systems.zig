@@ -78,6 +78,7 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		const sortedTypes = comptime RunOrderManager.getSortedOrder(@typeInfo(systemList).@"struct".decl_names, sideName, onEventName);
 		inline for (sortedTypes) |decl| {
 			if (@hasDecl(@field(@field(systemList, decl), sideName), onEventName)) {
+				if (@typeInfo(@TypeOf(@field(@field(@field(@field(systemList, decl), sideName), onEventName), "function"))).@"fn".param_types.len != 0) @compileError("Basic Hook functions must be fn() void: error in " ++ decl ++ "." ++ sideName ++ "." ++ onEventName);
 				@field(@field(@field(@field(systemList, decl), sideName), onEventName), "function")();
 			} else {
 				continue;
