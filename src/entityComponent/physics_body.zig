@@ -251,6 +251,5 @@ pub const server = struct {
 	fn setRotation(entity: Entity, givenRotation: Vec3f) void {
 		const positionComponent = components.get(entity) orelse return;
 		positionComponent.rotation = givenRotation;
-		main.entity.server.transmitChange(main.entity.components.@"cubyz:physics_body", entity);
 	}
 };

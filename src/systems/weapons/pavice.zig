@@ -180,7 +180,7 @@ pub const server = struct {
 			return;
 		}
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.paviceSwing);
-		systems.systems.selection_box.server.selectInCube(@"cubyz:physics_body".getPosition(givenEntity, .server) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
+		systems.systems.selection_box.server.selectInCube(@"cubyz:physics_body".getPosition(givenEntity, .server) orelse return, 2, dealDamage, .{.ignoreSelf = givenEntity});
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;

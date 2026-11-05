@@ -216,7 +216,7 @@ pub const server = struct {
 		if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerWindup")) {
 			
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerSmallSwing);
-			systems.systems.selection_box.server.selectInCube(entityPos, 2, dealDamage, .{.ignoreSelf = givenEntity});
+			systems.systems.selection_box.server.selectInCube(entityPos, 3, dealDamage, .{.ignoreSelf = givenEntity});
 		
 		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerFullCharged")) {
 			

@@ -127,7 +127,7 @@ pub const server = struct {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
 		std.log.debug("swing sword on server", .{});
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
-		systems.systems.selection_box.server.selectInCube(@"cubyz:physics_body".getPosition(givenEntity, .server) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
+		systems.systems.selection_box.server.selectInCube(@"cubyz:physics_body".getPosition(givenEntity, .server) orelse return, 2, dealDamage, .{.ignoreSelf = givenEntity});
 		//const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
 		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
 		const chargePower = 2;
