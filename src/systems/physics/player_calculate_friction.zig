@@ -79,8 +79,6 @@ pub const client = struct {
 		const playerPos = @"cubyz:position".getPositionPointer(player.id, .client).?;
 		physics.calculateVolumeProperties(.client, &player.volumeProperties, playerPos.*, player.outerBoundingBox, physics.playerAirTerminalVelocity);
 		physics.calculateFriction(.client, &player.volumeProperties, &player.friction, playerPos.*, player.outerBoundingBox, player.onGround);
-		std.log.debug("player.volumeProperties {}", .{player.volumeProperties.terminalVelocity});
-		std.log.debug("calculated friction {}", .{player.friction});
 	}
 };
 // ############################# Server only stuff ################################

@@ -60,8 +60,13 @@ pub const client = struct {
 		_ = playerPos;
 	}
 
-	fn update(deltaTime: f64) void {
-		_ = deltaTime;
+	pub const calculateFriction: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedPhase = .{.self = "paviceChargingOverride", .targetSortPhase = "fromVolumeProperties", .sortDirection = .after, .priority = 10},
+		.addedFunctionStep = .{.targetPhase = "paviceChargingOverride"},
+		.function = update,
+	};
+
+	fn update() void {
 		if (@"cubyz:pavice_charging".client.get(main.game.player.id) != null) {
 			player.friction = .{.current = 2, .mobile = 2};
 		}
@@ -72,14 +77,14 @@ pub const server = struct {
 	pub fn init() void {}
 	pub fn deinit() void {}
 
-	pub const onUpdateEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+	pub const updateEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
 		.addedFunctionStep = .{.targetPhase = "start"},
 		.function = update,
 	};
 
 	fn update() void {
 		for (@"cubyz:pavice_charging".server.components.dense.items, entity.components.@"cubyz:pavice_charging".server.components.denseToSparseIndex.items) |*component, id| {
-			component.updateAnimation(id);
+			component.update(id);
 		}
 	}
 

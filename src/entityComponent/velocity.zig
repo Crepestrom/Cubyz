@@ -157,11 +157,13 @@ pub const server = struct {
 	pub fn setVelocity(entity: Entity, givenVelocity: Vec3d) void {
 		const velocityComponent = components.get(entity) orelse return;
 		velocityComponent.velocity = givenVelocity;
+		std.log.debug("set Velocity", .{});
 		main.entity.server.transmitChange(main.entity.components.@"cubyz:velocity", entity);
 	}
 	pub fn addVelocity(entity: Entity, givenVelocity: Vec3d) void {
 		const velocityComponent = components.get(entity) orelse return;
 		velocityComponent.velocity += givenVelocity;
+		std.log.debug("add Velocity", .{});
 		main.entity.server.transmitChange(main.entity.components.@"cubyz:velocity", entity);
 	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {

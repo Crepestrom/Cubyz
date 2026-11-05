@@ -28,6 +28,8 @@ const random = main.random;
 
 const c = @import("c");
 
+const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+
 pub var entityComponentID: main.entity.EntityComponentId = undefined;
 pub const entityComponentVersion = 0;
 
@@ -85,7 +87,10 @@ pub const server = struct {
 			return .save;
 		}
 		pub fn update(self: *Component, entity: Entity) void {
-			if (self.endTime < main.server.world.?.gameTime) {
+			const stoppingSpeed = 5;
+			var entityVel = @"cubyz:velocity".getVelocity(entity, .client).?;
+			entityVel[2] = 0;
+			if ((self.endTime < main.server.world.?.gameTime) or (vec.length(entityVel) < stoppingSpeed)) {
 				removeFromBothSides(entity);
 			}
 		}
@@ -119,6 +124,7 @@ pub const server = struct {
 		}
 	}
 	pub fn removeFromBothSides(entity: Entity) void {
+		std.log.debug("testing", .{});
 		components.remove(entity) catch {};
 		main.entity.server.transmitChange(main.entity.components.@"cubyz:pavice_charging", entity);
 	}

@@ -123,13 +123,14 @@ pub const RunOrderManager = struct { // MARK: RunOrderManager
 		var stepList: []const FunctionStep = &startingFunctionStepList;
 		var phaseList: []Phase = &startingPhaseList;
 		for (declarationNames, 0..) |decl, i| {
-			if (@hasDecl(@field(@field(systems, decl), serverOrClient), targetHookName)) {
-				const newPhase: Phase = @field(@field(@field(@field(systems, decl), serverOrClient), targetHookName), "addedPhase") orelse continue;
-				var newStep: FunctionStep = @field(@field(@field(@field(systems, decl), serverOrClient), targetHookName), "addedFunctionStep");
+			const possibleHookSpot = @field(@field(systems, decl), serverOrClient);
+			if (@hasDecl(possibleHookSpot, targetHookName)) {
+				const newPhase: ?Phase = @field(@field(possibleHookSpot, targetHookName), "addedPhase");
+				var newStep: FunctionStep = @field(@field(possibleHookSpot, targetHookName), "addedFunctionStep");
 				newStep.order = i;
-				_ = PhaseType.findFromName(newPhase.self, phaseNameIds);
+				if (newPhase != null) _ = PhaseType.findFromName(newPhase.?.self, phaseNameIds);
 				addToStepArray(&stepList, newStep);
-				addToPhaseArray(&phaseList, newPhase);
+				if (newPhase != null) addToPhaseArray(&phaseList, newPhase.?);
 			} else {
 				continue;
 			}

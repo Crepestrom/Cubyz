@@ -61,7 +61,7 @@ pub const server = struct {
 	pub fn deinit() void {}
 
 	pub const updateEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
-		.addedFunctionStep = .{.targetPhase = "start"},
+		.addedFunctionStep = .{.targetPhase = "end"},
 		.function = adjustAnimation,
 	};
 

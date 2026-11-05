@@ -281,7 +281,7 @@ pub const collision = struct { // MARK: collision
 		if (collision.collides(side, dir, -amount, checkPos, hitBox)) |box| {
 			const newFloor = box.max[2] + hitBox.max[2] + epsilon;
 			const heightDifference = newFloor - checkPos[2];
-			std.log.debug("test point 2 {}", .{resultingMovement});
+
 			if (heightDifference <= steppingHeight) {
 				// If we collide but might be able to step up
 				checkPos[2] = newFloor;
