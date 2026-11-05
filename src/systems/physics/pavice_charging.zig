@@ -84,7 +84,29 @@ pub const server = struct {
 	fn update() void {
 		for (@"cubyz:pavice_charging".server.components.dense.items, entity.components.@"cubyz:pavice_charging".server.components.denseToSparseIndex.items) |*component, id| {
 			component.update(id);
+			const entityPos = @"cubyz:physics_body".getPosition(id, .server).?;
+			const direction = vec.normalize(@"cubyz:physics_body".getVelocity(id, .server).?);
+			const chargeHitDistance = 3;
+			systems.systems.selection_box.server.selectInCube(entityPos + direction*Vec3d{chargeHitDistance, chargeHitDistance, chargeHitDistance}, 1, dealDamage, .{.ignoreSelf = id});
+			const users = main.server.getUserList(main.stackAllocator);
+			defer main.stackAllocator.free(users);
+			for (users) |user| {
+				main.network.protocols.generic_update.sendParticles(
+					user.conn,
+					"cubyz:poof",
+					entityPos,
+					false,
+					1,
+					"",
+				);
+			}
 		}
 	}
 
+	fn dealDamage(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
+		main.sync.addHealth(-2, .kill, .server, givenEntity);
+		const direction = vec.normalize(entityPosition - sourcePosition);
+		@"cubyz:physics_body".setPosition(givenEntity, @"cubyz:physics_body".getPosition(givenEntity, .server).?, .server);
+		@"cubyz:physics_body".addVelocity(givenEntity, direction*Vec3d{10, 10, 10}, .server);
+	}
 };

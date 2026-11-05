@@ -62,6 +62,15 @@ pub const server = struct {
 		main.entity.components.@"cubyz:resource_change".server.unload(givenEntity);
 	}
 
+	pub fn payEnergyCost(givenEntity: Entity, change: f32) ?bool {
+		if (0 >= (main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null)) return false;
+		const startingTags: [0]main.Tag = .{};
+		main.entity.components.@"cubyz:resource_change".server.loadFromValues(givenEntity, change, &startingTags);
+		systems.RunOrderManager.createBasicHook("addEnergyEvent", systems.systems, .server);
+		main.entity.components.@"cubyz:resource_change".server.unload(givenEntity);
+		return 0 >= (main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null);
+	}
+
 	pub const addEnergyEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
 		.addedFunctionStep = .{.targetPhase = "end"},
 		.function = adjustEnergyChange,

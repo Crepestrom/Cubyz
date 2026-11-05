@@ -125,6 +125,7 @@ pub const server = struct {
 	
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
+		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, -2).?) return;
 
 		const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
 		const horizontalForward: Vec3d = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);

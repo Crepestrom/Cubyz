@@ -203,6 +203,7 @@ pub const server = struct {
 
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".server.isPlayingAnyAnimation(givenEntity) orelse true) return;
+		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, -3).?) return;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerWindup);
 	}
 	fn chargedSwing(givenEntity: Entity) void {
@@ -252,7 +253,7 @@ pub const server = struct {
 					entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance},
 					false,
 					10,
-					"",
+					".{}",
 				);
 			}
 		}

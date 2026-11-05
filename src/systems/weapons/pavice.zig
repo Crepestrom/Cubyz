@@ -179,11 +179,12 @@ pub const server = struct {
 			}
 			return;
 		}
+		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, -3).?) return;
 		const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
 		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
 		const swingDistance = 3;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.paviceSwing);
-		main.systems.systems.pavice.knockBackSourceRot = horizontalForward;
+		main.systems.systems.pavice.server.knockBackSourceRot = horizontalForward;
 		systems.systems.selection_box.server.selectInCube(entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, 0.5, dealDamage, .{.ignoreSelf = givenEntity});
 		systems.systems.selection_box.server.selectInCube(entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, 0.5, launchEnemies, .{.ignoreSelf = givenEntity});
 		const users = main.server.getUserList(main.stackAllocator);
@@ -211,6 +212,7 @@ pub const server = struct {
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 	fn charge(givenEntity: Entity) void {
+		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, -4).?) return;
 		std.log.debug("charging", .{});
 		//const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
 		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
@@ -231,7 +233,7 @@ pub const server = struct {
 	fn launchEnemies(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
 		_ = sourcePosition;
 		_ = entityPosition;
-		const direction = vec.rotateZ(Vec3d{0, 1, 0}, -knockBackSourceRot);
+		const direction = vec.rotateZ(Vec3d{0, 1, 0}, -knockBackSourceRot[2]);
 		@"cubyz:physics_body".setPosition(givenEntity, @"cubyz:physics_body".getPosition(givenEntity, .server).?, .server);
 		@"cubyz:physics_body".addVelocity(givenEntity, direction*Vec3d{10, 10, 10}, .server);
 	}
