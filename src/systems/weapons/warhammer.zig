@@ -225,7 +225,7 @@ pub const server = struct {
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullSwing);
 			//@"cubyz:physics_body".setPosition(givenEntity, entityPos, .server);
 			@"cubyz:physics_body".addVelocity(givenEntity, Vec3d{0, 0, 10} + horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
-			systems.systems.selection_box.server.selectInCube(entityPos, 3, dealDamage, .{.ignoreSelf = givenEntity});
+			systems.systems.selection_box.server.selectInCube(entityPos, 3, dealBigDamage, .{.ignoreSelf = givenEntity});
 			systems.systems.selection_box.server.selectInCube(entityPos, 3, launchEnemies, .{.ignoreSelf = givenEntity});
 		
 		}
@@ -249,6 +249,13 @@ pub const server = struct {
 		_ = sourcePosition;
 		_ = entityPosition;
 		main.sync.addHealth(-2, .kill, .server, givenEntity);
+	}
+
+	fn dealBigDamage(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
+		std.log.debug("damaged a entity", .{});
+		_ = sourcePosition;
+		_ = entityPosition;
+		main.sync.addHealth(-3, .kill, .server, givenEntity);
 	}
 	
 	fn launchEnemies(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {

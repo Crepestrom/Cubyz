@@ -207,6 +207,6 @@ pub const server = struct {
 		std.log.debug("damaged a entity", .{});
 		_ = sourcePosition;
 		_ = entityPosition;
-		main.sync.addHealth(-2, .kill, .server, givenEntity);
+		main.sync.addHealth(-1, .kill, .server, givenEntity);
 	}
 };
