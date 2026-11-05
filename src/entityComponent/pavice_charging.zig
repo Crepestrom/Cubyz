@@ -88,7 +88,7 @@ pub const server = struct {
 		}
 		pub fn update(self: *Component, entity: Entity) void {
 			const stoppingSpeed = 5;
-			var entityVel = @"cubyz:velocity".getVelocity(entity, .client).?;
+			var entityVel = @"cubyz:velocity".getVelocity(entity, .server).?;
 			entityVel[2] = 0;
 			if ((self.endTime < main.server.world.?.gameTime) or (vec.length(entityVel) < stoppingSpeed)) {
 				removeFromBothSides(entity);
