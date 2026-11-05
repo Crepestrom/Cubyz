@@ -216,7 +216,7 @@ pub const server = struct {
 		if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerWindup")) {
 			
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerSmallSwing);
-			systems.systems.selection_box.server.selectInCube(entityPos, 3, dealDamage, .{.ignoreSelf = givenEntity});
+			systems.systems.selection_box.server.selectInCube(entityPos, 2, dealDamage, .{.ignoreSelf = givenEntity});
 		
 		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerFullCharged")) {
 			
@@ -225,8 +225,8 @@ pub const server = struct {
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullSwing);
 			//@"cubyz:physics_body".setPosition(givenEntity, entityPos, .server);
 			@"cubyz:physics_body".addVelocity(givenEntity, Vec3d{0, 0, 10} + horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
-			systems.systems.selection_box.server.selectInCube(entityPos, 5, dealDamage, .{.ignoreSelf = givenEntity});
-			systems.systems.selection_box.server.selectInCube(entityPos, 5, launchEnemies, .{.ignoreSelf = givenEntity});
+			systems.systems.selection_box.server.selectInCube(entityPos, 3, dealDamage, .{.ignoreSelf = givenEntity});
+			systems.systems.selection_box.server.selectInCube(entityPos, 3, launchEnemies, .{.ignoreSelf = givenEntity});
 		
 		}
 		std.log.debug("released the swing 2 {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName});
