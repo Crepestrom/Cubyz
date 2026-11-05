@@ -28,8 +28,7 @@ const physics = main.physics;
 const keyboard = main.keyboard;
 
 const @"cubyz:health" = main.entity.components.@"cubyz:health";
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 pub const camera = struct { // MARK: camera
 	pub var rotation: Vec3f = Vec3f{0, 0, 0};
@@ -129,25 +128,25 @@ pub const player = struct { // MARK: player
 	pub fn setPosBlocking(newPos: Vec3d) void {
 		mutex.lock();
 		defer mutex.unlock();
-		@"cubyz:position".setPosition(super.id, newPos, .client);
+		@"cubyz:physics_body".setPosition(super.id, newPos, .client);
 	}
 
 	pub fn getPosBlocking() Vec3d {
 		mutex.lock();
 		defer mutex.unlock();
-		return @"cubyz:position".getPosition(super.id, .client).?;
+		return @"cubyz:physics_body".getPosition(super.id, .client).?;
 	}
 
 	pub fn getVelBlocking() Vec3d {
 		mutex.lock();
 		defer mutex.unlock();
-		return @"cubyz:velocity".getVelocity(super.id, .client).?;
+		return @"cubyz:physics_body".getVelocity(super.id, .client).?;
 	}
 
 	pub fn getEyePosBlocking() Vec3d {
 		mutex.lock();
 		defer mutex.unlock();
-		return eye.pos + @"cubyz:position".getPosition(super.id, .client).? + eye.desiredPos;
+		return eye.pos + @"cubyz:physics_body".getPosition(super.id, .client).? + eye.desiredPos;
 	}
 
 	pub fn getEyeVelBlocking() Vec3d {
@@ -207,8 +206,8 @@ pub const player = struct { // MARK: player
 	}
 
 	pub fn kill(spawnPos: Vec3d) void {
-		@"cubyz:velocity".setVelocity(player.super.id, .{0, 0, 0}, .client);
-		@"cubyz:position".setPosition(player.id, spawnPos, .client);
+		@"cubyz:physics_body".setVelocity(player.super.id, .{0, 0, 0}, .client);
+		@"cubyz:physics_body".setPosition(player.id, spawnPos, .client);
 
 		player.eye = .{};
 		player.jumpCoyote = 0;

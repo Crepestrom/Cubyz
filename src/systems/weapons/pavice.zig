@@ -32,8 +32,7 @@ const c = @import("c");
 
 const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
 const @"cubyz:weapon_blocking" = main.entity.components.@"cubyz:weapon_blocking";
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 const @"cubyz:pavice_charging" = main.entity.components.@"cubyz:pavice_charging";
 
 const entityComponent = main.entityComponent;
@@ -181,7 +180,7 @@ pub const server = struct {
 			return;
 		}
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.paviceSwing);
-		systems.systems.selection_box.server.selectInCube(@"cubyz:position".getPosition(givenEntity, .server) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
+		systems.systems.selection_box.server.selectInCube(@"cubyz:physics_body".getPosition(givenEntity, .server) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
@@ -196,11 +195,11 @@ pub const server = struct {
 	}
 	fn charge(givenEntity: Entity) void {
 		std.log.debug("charging", .{});
-		//const entityPos: Vec3d = @"cubyz:position".getPosition(givenEntity, .server) orelse return;
-		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
+		//const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
+		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
 		const chargePower = 30;
-		//@"cubyz:position".setPosition(givenEntity, entityPos, .server);
-		@"cubyz:velocity".addVelocity(givenEntity, horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
+		//@"cubyz:physics_body".setPosition(givenEntity, entityPos, .server);
+		@"cubyz:physics_body".addVelocity(givenEntity, horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
 		@"cubyz:pavice_charging".server.add(givenEntity, 20);
 	}
 

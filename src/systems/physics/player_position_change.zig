@@ -33,8 +33,7 @@ const camera = main.game.camera;
 const physics = main.physics;
 const player = main.game.player;
 
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 const c = @import("c");
 
@@ -65,8 +64,8 @@ pub const client = struct {
 	};
 
 	fn update(deltaTime: f64) void {
-		const playerPos = @"cubyz:position".getPositionPointer(player.id, .client).?;
-		const playerVel = @"cubyz:velocity".getVelocityPointer(player.id, .client).?;
+		const playerPos = @"cubyz:physics_body".getPositionPointer(player.id, .client).?;
+		const playerVel = @"cubyz:physics_body".getVelocityPointer(player.id, .client).?;
 
 		const gravity: f64 = if (player.isFlying.load(.monotonic)) 0.0 else physics.baseGravity;
 		const jumpHeight: f64 = if (player.jumping) player.jumpHeight else 0.0;

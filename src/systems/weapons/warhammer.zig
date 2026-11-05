@@ -32,8 +32,7 @@ const c = @import("c");
 
 const @"cubyz:player_hand_animation" = main.entity.components.@"cubyz:player_hand_animation";
 const @"cubyz:weapon_blocking" = main.entity.components.@"cubyz:weapon_blocking";
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 const entityComponent = main.entityComponent;
 
@@ -213,18 +212,22 @@ pub const server = struct {
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {
 		std.log.debug("released the swing 1 {} {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName, main.Tag.find("warhammerWindup")});
-		const entityPos: Vec3d = @"cubyz:position".getPosition(givenEntity, .server) orelse return;
+		const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
 		if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerWindup")) {
+			
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerSmallSwing);
 			systems.systems.selection_box.server.selectInCube(entityPos, 2, dealDamage, .{.ignoreSelf = givenEntity});
+		
 		} else if (@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName orelse return == main.Tag.find("warhammerFullCharged")) {
-			const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
+			
+			const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
 			const chargePower = -5;
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullSwing);
-			//@"cubyz:position".setPosition(givenEntity, entityPos, .server);
-			@"cubyz:velocity".addVelocity(givenEntity, Vec3d{0, 0, 10} + horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
+			//@"cubyz:physics_body".setPosition(givenEntity, entityPos, .server);
+			@"cubyz:physics_body".addVelocity(givenEntity, Vec3d{0, 0, 10} + horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
 			systems.systems.selection_box.server.selectInCube(entityPos, 5, dealDamage, .{.ignoreSelf = givenEntity});
 			systems.systems.selection_box.server.selectInCube(entityPos, 5, launchEnemies, .{.ignoreSelf = givenEntity});
+		
 		}
 		std.log.debug("released the swing 2 {}", .{@"cubyz:player_hand_animation".server.get(givenEntity).?.animationName});
 	}
@@ -250,7 +253,7 @@ pub const server = struct {
 	
 	fn launchEnemies(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
 		const direction = vec.normalize(entityPosition - sourcePosition);
-		@"cubyz:position".setPosition(givenEntity, @"cubyz:position".getPosition(givenEntity, .server).?, .server);
-		@"cubyz:velocity".addVelocity(givenEntity, direction*Vec3d{10, 10, 10}, .server);
+		@"cubyz:physics_body".setPosition(givenEntity, @"cubyz:physics_body".getPosition(givenEntity, .server).?, .server);
+		@"cubyz:physics_body".addVelocity(givenEntity, direction*Vec3d{10, 10, 10}, .server);
 	}
 };

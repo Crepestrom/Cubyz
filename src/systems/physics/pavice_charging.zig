@@ -33,8 +33,7 @@ const camera = main.game.camera;
 const physics = main.physics;
 const player = main.game.player;
 
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 const @"cubyz:pavice_charging" = main.entity.components.@"cubyz:pavice_charging";
 
 

@@ -28,7 +28,7 @@ const random = main.random;
 
 const c = @import("c");
 
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 pub var entityComponentID: main.entity.EntityComponentId = undefined;
 pub const entityComponentVersion = 0;
@@ -88,7 +88,7 @@ pub const server = struct {
 		}
 		pub fn update(self: *Component, entity: Entity) void {
 			const stoppingSpeed = 5;
-			var entityVel = @"cubyz:velocity".getVelocity(entity, .server).?;
+			var entityVel = @"cubyz:physics_body".getVelocity(entity, .server).?;
 			entityVel[2] = 0;
 			if ((self.endTime < main.server.world.?.gameTime) or (vec.length(entityVel) < stoppingSpeed)) {
 				removeFromBothSides(entity);

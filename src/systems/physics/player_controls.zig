@@ -31,8 +31,7 @@ const Entity = entity.Entity;
 const keyboard = main.keyboard;
 const camera = main.game.camera;
 
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 const c = @import("c");
 

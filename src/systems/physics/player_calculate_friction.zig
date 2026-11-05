@@ -33,8 +33,7 @@ const camera = main.game.camera;
 const physics = main.physics;
 const player = main.game.player;
 
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 const c = @import("c");
 
@@ -76,7 +75,7 @@ pub const client = struct {
 	};
 
 	fn friction() void {
-		const playerPos = @"cubyz:position".getPositionPointer(player.id, .client).?;
+		const playerPos = @"cubyz:physics_body".getPositionPointer(player.id, .client).?;
 		physics.calculateVolumeProperties(.client, &player.volumeProperties, playerPos.*, player.outerBoundingBox, physics.playerAirTerminalVelocity);
 		physics.calculateFriction(.client, &player.volumeProperties, &player.friction, playerPos.*, player.outerBoundingBox, player.onGround);
 	}

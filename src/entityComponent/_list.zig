@@ -9,9 +9,8 @@ pub const @"cubyz:pavice_charging" = @import("pavice_charging.zig");
 pub const @"cubyz:permissions" = @import("permissions.zig");
 pub const @"cubyz:player" = @import("player.zig");
 pub const @"cubyz:player_hand_animation" = @import("player_hand_animation.zig");
-pub const @"cubyz:position" = @import("position.zig");
+pub const @"cubyz:physics_body" = @import("physics_body.zig");
 pub const @"cubyz:swinging" = @import("swinging.zig");
-pub const @"cubyz:velocity" = @import("velocity.zig");
 pub const @"cubyz:weapon_blocking" = @import("weapon_blocking.zig");
 
 pub const @"cubyz:energy" = @import("battle_resources/energy.zig");

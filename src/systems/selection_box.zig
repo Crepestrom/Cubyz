@@ -62,7 +62,7 @@ pub const server = struct {
 	pub fn selectInSphere(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void) void {
 		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const boundingBox: Vec3d = @splat(radius);
-			const relativePos: Vec3d = position - (component.offset + (main.entity.components.@"cubyz:position".getPosition(id) orelse continue));
+			const relativePos: Vec3d = position - (component.offset + (main.entity.components.@"cubyz:physics_body".getPosition(id) orelse continue));
 			if (boundingBox[0] < relativePos[0]) return;
 			if (boundingBox[1] < relativePos[1]) return;
 			if (boundingBox[2] < relativePos[2]) return;
@@ -72,7 +72,7 @@ pub const server = struct {
 	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void, options: SelectionOptions) void {
 		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
 			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
-			const entityPos = main.entity.components.@"cubyz:position".getPosition(id, .server) orelse continue;
+			const entityPos = main.entity.components.@"cubyz:physics_body".getPosition(id, .server) orelse continue;
 			const relativePos: Vec3d = @abs(position - entityPos);
 			if (combinedBoundingBox[0] < relativePos[0]) continue;
 			if (combinedBoundingBox[1] < relativePos[1]) continue;

@@ -7,21 +7,16 @@ const Vec3f = vec.Vec3f;
 const Vec3d = vec.Vec3d;
 const NeverFailingAllocator = main.heap.NeverFailingAllocator;
 
-const @"cubyz:position" = main.entity.components.@"cubyz:position";
-const @"cubyz:velocity" = main.entity.components.@"cubyz:velocity";
-
-rot: Vec3f = .{0, 0, 0},
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 name: ?[]const u8 = null,
 id: main.entity.Entity = .noValue,
 
 pub fn loadFrom(self: *@This(), id: main.entity.Entity, zon: ZonElement, comptime side: main.sync.Side) !void {
 	self.id = id;
-	self.rot = zon.get(Vec3f, "rotation") orelse .{0, 0, 0};
 	if (zon.getChildOrNull("components")) |components| {
 		try main.entity.loadComponentsFromBase64(components.as([]const u8) orelse "", self.id, side);
 	}
-	self.rot = zon.get(Vec3f, "rotation") orelse .{0, 0, 0};
 
 	if (zon.getChildOrNull("name")) |name| {
 		if (self.name) |oldname| {
@@ -40,7 +35,6 @@ pub fn clone(self: *@This(), copy: *@This()) void {
 
 pub fn save(self: *const @This(), allocator: NeverFailingAllocator, audience: main.entity.AudienceInfo) ZonElement {
 	const zon = ZonElement.initObject(allocator);
-	zon.put("rotation", self.rot);
 	zon.put("id", @backingInt(self.id));
 
 	var base64 = main.entity.server.componentsToBase64(allocator, self.id, audience);
