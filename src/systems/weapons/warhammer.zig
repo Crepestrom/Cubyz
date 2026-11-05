@@ -221,7 +221,7 @@ pub const server = struct {
 			const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
 			const chargePower = -5;
 			@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullSwing);
-			@"cubyz:position".setPosition(givenEntity, entityPos, .server);
+			//@"cubyz:position".setPosition(givenEntity, entityPos, .server);
 			@"cubyz:velocity".addVelocity(givenEntity, Vec3d{0, 0, 10} + horizontalForward*Vec3d{chargePower, chargePower, chargePower} + Vec3d{0, 0, 3}, .server);
 			systems.systems.selection_box.server.selectInCube(entityPos, 5, dealDamage, .{.ignoreSelf = givenEntity});
 			systems.systems.selection_box.server.selectInCube(entityPos, 5, launchEnemies, .{.ignoreSelf = givenEntity});

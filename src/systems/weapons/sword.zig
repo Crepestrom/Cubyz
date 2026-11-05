@@ -129,10 +129,10 @@ pub const server = struct {
 		std.log.debug("swing sword on server", .{});
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
 		systems.systems.selection_box.server.selectInCube(@"cubyz:position".getPosition(givenEntity, .server) orelse return, 10, dealDamage, .{.ignoreSelf = givenEntity});
-		const entityPos: Vec3d = @"cubyz:position".getPosition(givenEntity, .server) orelse return;
+		//const entityPos: Vec3d = @"cubyz:position".getPosition(givenEntity, .server) orelse return;
 		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
 		const chargePower = 2;
-		@"cubyz:position".setPosition(givenEntity, entityPos, .server);
+		//@"cubyz:position".setPosition(givenEntity, entityPos, .server);
 		@"cubyz:velocity".addVelocity(givenEntity, horizontalForward*Vec3d{chargePower, chargePower, chargePower}, .server);
 	}
 	pub fn block(givenEntity: Entity) void {
