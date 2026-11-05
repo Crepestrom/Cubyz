@@ -179,8 +179,25 @@ pub const server = struct {
 			}
 			return;
 		}
+		const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
+		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
+		const swingDistance = 3;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.paviceSwing);
-		systems.systems.selection_box.server.selectInCube(@"cubyz:physics_body".getPosition(givenEntity, .server) orelse return, 2, dealDamage, .{.ignoreSelf = givenEntity});
+		main.systems.systems.pavice.knockBackSourceRot = horizontalForward;
+		systems.systems.selection_box.server.selectInCube(entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, 0.5, dealDamage, .{.ignoreSelf = givenEntity});
+		systems.systems.selection_box.server.selectInCube(entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, 0.5, launchEnemies, .{.ignoreSelf = givenEntity});
+		const users = main.server.getUserList(main.stackAllocator);
+		defer main.stackAllocator.free(users);
+		for (users) |user| {
+			main.network.protocols.generic_update.sendParticles(
+				user.conn,
+				"cubyz:poof",
+				entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance},
+				false,
+				1,
+				"",
+			);
+		}
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
@@ -208,5 +225,14 @@ pub const server = struct {
 		_ = sourcePosition;
 		_ = entityPosition;
 		main.sync.addHealth(-1, .kill, .server, givenEntity);
+	}
+
+	var knockBackSourceRot: Vec3d = .{0, 0, 0};
+	fn launchEnemies(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
+		_ = sourcePosition;
+		_ = entityPosition;
+		const direction = vec.rotateZ(Vec3d{0, 1, 0}, -knockBackSourceRot);
+		@"cubyz:physics_body".setPosition(givenEntity, @"cubyz:physics_body".getPosition(givenEntity, .server).?, .server);
+		@"cubyz:physics_body".addVelocity(givenEntity, direction*Vec3d{10, 10, 10}, .server);
 	}
 };

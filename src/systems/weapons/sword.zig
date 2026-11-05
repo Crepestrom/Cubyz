@@ -125,26 +125,26 @@ pub const server = struct {
 	
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
-		std.log.debug("swing sword on server", .{});
-		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
-		systems.systems.selection_box.server.selectInCube(@"cubyz:physics_body".getPosition(givenEntity, .server) orelse return, 2, dealDamage, .{.ignoreSelf = givenEntity});
+
 		const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
-		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -main.game.camera.rotation[2]);
+		const horizontalForward: Vec3d = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
 		const chargePower = 2;
+		const swingDistance = 4;
+		
+		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
+		systems.systems.selection_box.server.selectInCube(entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, 0.5, dealDamage, .{.ignoreSelf = givenEntity});
 		//@"cubyz:physics_body".setPosition(givenEntity, entityPos, .server);
 		@"cubyz:physics_body".addVelocity(givenEntity, horizontalForward*Vec3d{chargePower, chargePower, chargePower}, .server);
+		
 		const users = main.server.getUserList(main.stackAllocator);
 		defer main.stackAllocator.free(users);
 		for (users) |user| {
-		main.network.protocols.generic_update.sendParticles(
-			user.conn,
-			"cubyz:position",
-			entityPos,
-			false,
-			1,
-			"",
-		);
-	}
+			summonPoof(entityPos + horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, user);
+			summonPoof(entityPos + vec.rotateZ(horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, std.math.pi*0.1), user);
+			summonPoof(entityPos + vec.rotateZ(horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, std.math.pi*0.2), user);
+			summonPoof(entityPos + vec.rotateZ(horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, std.math.pi*-0.1), user);
+			summonPoof(entityPos + vec.rotateZ(horizontalForward*Vec3d{swingDistance, swingDistance, swingDistance}, std.math.pi*-0.2), user);
+		}
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
@@ -165,5 +165,16 @@ pub const server = struct {
 		_ = sourcePosition;
 		_ = entityPosition;
 		main.sync.addHealth(-1, .kill, .server, givenEntity);
+	}
+
+	fn summonPoof(pos: Vec3d, user: *main.server.User) void {
+		main.network.protocols.generic_update.sendParticles(
+			user.conn,
+			"cubyz:poof",
+			pos,
+			false,
+			1,
+			"",
+		);
 	}
 };
