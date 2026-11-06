@@ -39,11 +39,6 @@ pub const client = struct {
 		baseEnergyRegenRate: f32,
 		energyRegenDelay: i64,
 		currentDelayEndTime: i64,
-		pub fn update(self: *Component, entity: Entity, deltaTime: f64) void {
-			_ = self;
-			const component = get(entity) orelse return;
-			main.systems.systems.energy.client.addEnergy(entity, @floatCast(@as(f64, @floatCast(component.baseEnergyRegenRate))*deltaTime));
-		}
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
 
@@ -58,12 +53,6 @@ pub const client = struct {
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
 	}
-	pub fn getPredictedEnergy(entity: Entity) ?f32 {
-		return (components.get(entity) orelse return null).energy;
-	}
-	pub fn getPredictedMaxEnergy(entity: Entity) ?f32 {
-		return (components.get(entity) orelse return null).maxEnergy;
-	}
 
 	pub fn load(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
 		if (version != entityComponentVersion) return error.InvalidComponentVersion;
@@ -77,9 +66,9 @@ pub const client = struct {
 		const baseEnergyRegenRate = reader.readFloat(f32) catch return error.UnreadableComponentData;
 		const energyRegenDelay = reader.readInt(i64) catch return error.UnreadableComponentData;
 		const currentDelayEndTime = reader.readInt(i64) catch return error.UnreadableComponentData;
-		const deltatime: f64 = @as(f64, @floatFromInt(main.game.world.?.gameTime.load(.monotonic) - currentDelayEndTime))/10;
+		//const deltatime: f64 = @as(f64, @floatFromInt(main.game.world.?.gameTime.load(.monotonic) - currentDelayEndTime))/10;
 
-		@"cubyz:energy".client.changePredictedEnergy(entity, @floatCast(@as(f64, @floatCast(baseEnergyRegenRate))*deltatime));
+		//@"cubyz:energy".client.changePredictedEnergy(entity, @floatCast(@as(f64, @floatCast(baseEnergyRegenRate))*deltatime));
 
 		ptr.* = Component{
 			.baseEnergyRegenRate = baseEnergyRegenRate,
@@ -106,11 +95,11 @@ pub const server = struct {
 			return .save;
 		}
 		pub fn update(self: *Component, entity: Entity) void {
-			_ = self;
-			const component = get(entity) orelse return;
-			const deltaTime: f64 = @as(f64, @floatFromInt(main.game.world.?.gameTime.load(.monotonic) - component.currentDelayEndTime))/10;
-			std.log.debug("huh? {}", .{main.entity.components.@"cubyz:energy".server.getEnergy(entity)});
-			main.systems.systems.energy.server.addEnergy(entity, @floatCast(@as(f64, @floatCast(component.baseEnergyRegenRate))*deltaTime));
+			if (0 < main.server.world.?.gameTime - self.currentDelayEndTime) {
+				const deltaTime: f64 = @as(f64, @floatFromInt(main.server.world.?.gameTime - self.currentDelayEndTime))/10;
+				self.currentDelayEndTime = main.server.world.?.gameTime;
+				main.systems.systems.energy.server.addEnergy(entity, @floatCast(@as(f64, @floatCast(self.baseEnergyRegenRate))*deltaTime));
+			}
 		}
 	};
 	pub var components: main.utils.SparseSet(Component, Entity) = .{};
@@ -149,5 +138,9 @@ pub const server = struct {
 	}
 	pub fn unload(entity: Entity) void {
 		components.remove(entity) catch {};
+	}
+	pub fn resetDelayTime(entity: Entity) void {
+		const component = components.get(entity) orelse return;
+		component.currentDelayEndTime = main.server.world.?.gameTime + component.energyRegenDelay;
 	}
 };

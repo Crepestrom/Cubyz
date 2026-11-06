@@ -47,6 +47,20 @@ pub const client = struct {
 		_ = ambientLight;
 		_ = playerPos;
 	}
+
+	pub fn update(deltaTime: f64) void {
+		const sideName = "client";
+		const onEventName = "updateEvent";
+		const systemList = systems.systems;
+		const sortedTypes = comptime main.systems.RunOrderManager.getSortedOrder(@typeInfo(systemList).@"struct".decl_names, sideName, onEventName);
+		inline for (sortedTypes) |decl| {
+			if (@hasDecl(@field(@field(systemList, decl), sideName), onEventName)) {
+				@field(@field(@field(@field(systemList, decl), sideName), onEventName), "function")(deltaTime);
+			} else {
+				continue;
+			}
+		}
+	}
 };
 // ############################# Server only stuff ################################
 pub const server = struct {

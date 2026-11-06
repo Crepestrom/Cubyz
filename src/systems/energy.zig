@@ -63,12 +63,13 @@ pub const server = struct {
 	}
 
 	pub fn payEnergyCost(givenEntity: Entity, change: f32) ?bool {
-		if (0 >= (main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null)) return false;
+		const currentEnergy = main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null;
+		if (0 >= (currentEnergy)) return false;
 		const startingTags: [0]main.Tag = .{};
 		main.entity.components.@"cubyz:resource_change".server.loadFromValues(givenEntity, change, &startingTags);
 		systems.RunOrderManager.createBasicHook("addEnergyEvent", systems.systems, .server);
 		main.entity.components.@"cubyz:resource_change".server.unload(givenEntity);
-		return 0 >= (main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null);
+		return true;
 	}
 
 	pub const addEnergyEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
