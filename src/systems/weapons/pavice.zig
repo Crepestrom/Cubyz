@@ -131,7 +131,7 @@ pub const client = struct {
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) {
 			if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity, main.Tag.find("paviceBlock")) orelse return) {
-				if (!main.systems.systems.energy.server.canPayEnergyCost(givenEntity, chargeEnergyCost).?) return;
+				if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity, chargeEnergyCost).?) return;
 				@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceCharge"), .animationLength = 5});
 			}
 			return;
