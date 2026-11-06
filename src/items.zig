@@ -634,9 +634,10 @@ const procedural_item_physics = struct { // MARK: procedural_item_physics
 			var weight: f32 = 0;
 			for (0..25) |i| {
 				const material = (proceduralItem.craftingGrid[i] orelse continue).material() orelse continue;
-				sum += if (property.destination != .swingSpeed) property.weights[i]*material.getProperty(property.source orelse break) + property.weights[i]/(material.getProperty(property.source orelse break));
+				sum += property.weights[i]*material.getProperty(property.source orelse break);
 				weight += property.weights[i];
 			}
+			if ((property.resultScale < 0) and (property.destination == .swingSpeed)) sum = 1/sum;
 			if (weight == 0) continue;
 			switch (property.method) {
 				.sum => {},
