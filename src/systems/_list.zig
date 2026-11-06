@@ -7,6 +7,7 @@ pub const momentum = @import("momentum.zig");
 pub const ammo = @import("ammo.zig");
 pub const mana_charge = @import("mana_charge.zig");
 pub const selection_box = @import("selection_box.zig");
+pub const passive_energy_regen = @import("passive_energy_regen.zig");
 pub const physics = @import("physics.zig");
 pub const player_hand_animation = @import("player_hand_animation.zig");
 pub const weapon_blocking = @import("weapon_blocking.zig");

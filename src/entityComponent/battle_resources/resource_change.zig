@@ -72,6 +72,13 @@ pub const client = struct {
 			}
 		};
 	}
+	pub fn loadFromPredictedValues(entity: Entity, number: f32, tags: []const main.Tag) void {
+		const ptr: *Component = components.add(main.globalAllocator, entity);
+		ptr.* = Component{
+			.change = number,
+			.tags = tags,
+		};
+	}
 	pub fn unload(entity: Entity) void {
 		components.remove(entity) catch {};
 	}

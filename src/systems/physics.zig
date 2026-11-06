@@ -53,6 +53,12 @@ pub const client = struct {
 		_ = playerPos;
 	}
 
+	pub const updateEvent: systems.RunOrderManager.FunctionHook(fn(deltaTime: f64) void) = .{
+		.addedPhase = .{.self = "physics", .targetSortPhase = "end", .sortDirection = .before, .priority = 0},
+		.addedFunctionStep = .{.targetPhase = "physics"},
+		.function = update,
+	};
+
 	pub fn update(deltaTime: f64) void {
 		const sideName = "client";
 		const onEventName = "onPhysicsUpdate";

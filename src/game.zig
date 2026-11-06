@@ -648,7 +648,7 @@ pub fn update(deltaTime: f64) void { // MARK: update()
 		return;
 	};
 
-	main.systems.systems.physics.client.update(deltaTime);
+	main.systems.systems.update.client.update(deltaTime);
 
 	const time = main.timestamp();
 	if (nextBlockPlaceTime) |*placeTime| {
