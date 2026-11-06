@@ -565,10 +565,10 @@ var nextBlockPlaceTime: ?std.Io.Timestamp = null;
 var nextBlockBreakTime: ?std.Io.Timestamp = null;
 
 pub fn pressBreak(mods: main.Window.Key.Modifiers) void {
-	const time = main.timestamp();
-	nextBlockBreakTime = time.addDuration(main.settings.updateRepeatDelay);
 	const skipPlacing = useItem(mods, .normal);
 	if (skipPlacing) return;
+	const time = main.timestamp();
+	nextBlockBreakTime = time.addDuration(main.settings.updateRepeatDelay);
 	player.breakBlock(0);
 }
 
@@ -578,10 +578,10 @@ pub fn releaseBreak(mods: main.Window.Key.Modifiers) void {
 }
 
 pub fn pressPlace(mods: main.Window.Key.Modifiers) void {
-	const time = main.timestamp();
-	nextBlockPlaceTime = time.addDuration(main.settings.updateRepeatDelay);
 	const skipPlacing = useItem(mods, .alt);
 	if (skipPlacing) return;
+	const time = main.timestamp();
+	nextBlockPlaceTime = time.addDuration(main.settings.updateRepeatDelay);
 	player.placeBlock(mods);
 }
 

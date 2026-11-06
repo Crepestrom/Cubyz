@@ -37,6 +37,9 @@ const @"cubyz:pavice_charging" = main.entity.components.@"cubyz:pavice_charging"
 
 const entityComponent = main.entityComponent;
 const swingsPerSecond = 1.5;
+const swingEnergyCost = -2;
+const chargeEnergyCost = -4;
+
 
 // ############################# Client only stuff ################################
 pub const client = struct {
@@ -128,10 +131,12 @@ pub const client = struct {
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) {
 			if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity, main.Tag.find("paviceBlock")) orelse return) {
+				if (!main.systems.systems.energy.server.canPayEnergyCost(givenEntity, chargeEnergyCost).?) return;
 				@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceCharge"), .animationLength = 5});
 			}
 			return;
 		}
+		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity, swingEnergyCost).?) return;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceSwing"), .animationLength = 10/@as(i64, @intFromFloat(swingsPerSecond))});
 	}
 	pub fn block(givenEntity: Entity) void {
@@ -179,7 +184,7 @@ pub const server = struct {
 			}
 			return;
 		}
-		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, -3).?) return;
+		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, swingEnergyCost).?) return;
 		const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
 		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
 		const swingDistance = 3;
@@ -212,7 +217,7 @@ pub const server = struct {
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 	fn charge(givenEntity: Entity) void {
-		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, -4).?) return;
+		if (!main.systems.systems.energy.server.payEnergyCost(givenEntity, chargeEnergyCost).?) return;
 		std.log.debug("charging", .{});
 		//const entityPos: Vec3d = @"cubyz:physics_body".getPosition(givenEntity, .server) orelse return;
 		const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -@"cubyz:physics_body".getRotation(givenEntity, .server).?[2]);
