@@ -27,6 +27,9 @@ const Block = main.blocks.Block;
 const physics = main.physics;
 const keyboard = main.keyboard;
 
+const @"cubyz:health" = main.entity.components.@"cubyz:health";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
+
 pub const camera = struct { // MARK: camera
 	pub var rotation: Vec3f = Vec3f{0, 0, 0};
 	pub var direction: Vec3f = Vec3f{0, 0, 0};
@@ -92,14 +95,16 @@ pub const player = struct { // MARK: player
 	pub var selectedSlot: u32 = 0;
 	pub const defaultBlockDamage: f32 = 1;
 	pub var inputSpeed: f64 = 0;
+	pub var acc: Vec3d = .{0, 0, 0};
 
 	pub var selectionPosition1: ?Vec3i = null;
 	pub var selectionPosition2: ?Vec3i = null;
 
-	pub var friction: physics.FrictionState = .{.current = 0, .mobile = 0};
-	pub var volumeProperties: physics.collision.VolumeProperties = .{.density = 0, .maxDensity = 0, .mobileFriction = 0, .terminalVelocity = 0};
+	pub var friction: physics.FrictionState = .{.current = 1, .mobile = 1};
+	pub var volumeProperties: physics.collision.VolumeProperties = .{.density = 0, .maxDensity = 0, .mobileFriction = 0, .terminalVelocity = 1};
 
 	pub var onGround: bool = false;
+	pub var jumping: bool = false;
 	pub var jumpCooldown: f64 = 0;
 	pub var jumpCoyote: f64 = 0;
 	pub const jumpCooldownConstant = 0.3;
@@ -117,31 +122,31 @@ pub const player = struct { // MARK: player
 	pub const jumpHeight = 1.25;
 
 	fn loadFrom(zon: ZonElement) !void {
-		try super.loadFrom(id, zon, .client, undefined);
+		try super.loadFrom(id, zon, .client);
 	}
 
 	pub fn setPosBlocking(newPos: Vec3d) void {
 		mutex.lock();
 		defer mutex.unlock();
-		super.pos = newPos;
+		@"cubyz:physics_body".setPosition(super.id, newPos, .client);
 	}
 
 	pub fn getPosBlocking() Vec3d {
 		mutex.lock();
 		defer mutex.unlock();
-		return super.pos;
+		return @"cubyz:physics_body".getPosition(super.id, .client).?;
 	}
 
 	pub fn getVelBlocking() Vec3d {
 		mutex.lock();
 		defer mutex.unlock();
-		return super.vel;
+		return @"cubyz:physics_body".getVelocity(super.id, .client).?;
 	}
 
 	pub fn getEyePosBlocking() Vec3d {
 		mutex.lock();
 		defer mutex.unlock();
-		return eye.pos + super.pos + eye.desiredPos;
+		return eye.pos + @"cubyz:physics_body".getPosition(super.id, .client).? + eye.desiredPos;
 	}
 
 	pub fn getEyeVelBlocking() Vec3d {
@@ -197,16 +202,12 @@ pub const player = struct { // MARK: player
 				if (onInteract.run(.{.blockPos = blockPos, .block = block, .chunk = mesh.chunk}) == .handled) return;
 			}
 		}
-
 		inventory.placeBlock(selectedSlot);
 	}
 
 	pub fn kill(spawnPos: Vec3d) void {
-		player.super.pos = spawnPos;
-		player.super.vel = .{0, 0, 0};
-
-		player.super.health = player.super.maxHealth;
-		player.super.energy = player.super.maxEnergy;
+		@"cubyz:physics_body".setVelocity(player.super.id, .{0, 0, 0}, .client);
+		@"cubyz:physics_body".setPosition(player.id, spawnPos, .client);
 
 		player.eye = .{};
 		player.jumpCoyote = 0;
@@ -563,24 +564,42 @@ pub var projectionMatrix: Mat4f = Mat4f.identity();
 var nextBlockPlaceTime: ?std.Io.Timestamp = null;
 var nextBlockBreakTime: ?std.Io.Timestamp = null;
 
-pub fn pressPlace(mods: main.Window.Key.Modifiers) void {
-	const time = main.timestamp();
-	nextBlockPlaceTime = time.addDuration(main.settings.updateRepeatDelay);
-	player.placeBlock(mods);
-}
-
-pub fn releasePlace(_: main.Window.Key.Modifiers) void {
-	nextBlockPlaceTime = null;
-}
-
-pub fn pressBreak(_: main.Window.Key.Modifiers) void {
+pub fn pressBreak(mods: main.Window.Key.Modifiers) void {
+	const skipPlacing = useItem(mods, .normal);
+	if (skipPlacing) return;
 	const time = main.timestamp();
 	nextBlockBreakTime = time.addDuration(main.settings.updateRepeatDelay);
 	player.breakBlock(0);
 }
 
-pub fn releaseBreak(_: main.Window.Key.Modifiers) void {
+pub fn releaseBreak(mods: main.Window.Key.Modifiers) void {
 	nextBlockBreakTime = null;
+	_ = useItem(mods, .normalEnd);
+}
+
+pub fn pressPlace(mods: main.Window.Key.Modifiers) void {
+	const skipPlacing = useItem(mods, .alt);
+	if (skipPlacing) return;
+	const time = main.timestamp();
+	nextBlockPlaceTime = time.addDuration(main.settings.updateRepeatDelay);
+	player.placeBlock(mods);
+}
+
+pub fn releasePlace(mods: main.Window.Key.Modifiers) void {
+	nextBlockPlaceTime = null;
+	_ = useItem(mods, .altEnd);
+}
+
+fn useItem(_: main.Window.Key.Modifiers, useType: main.sync.Command.UseType) bool {
+	const slot = main.game.player.selectedSlot;
+	const stack = main.game.player.inventory.getStack(slot);
+	if (stack.item == .proceduralItem) {
+		if (!stack.item.proceduralItem.type.onUse().isNoop()) {
+			main.sync.client.executeCommand(.{ .useItem = .{ .source = main.game.player.inventory.getInventoryAndSlot(slot), .target = main.game.player.id, .useType = useType } });
+			return true;
+		}
+	}
+	return false;
 }
 
 pub fn pressAcquireSelectedBlock(_: main.Window.Key.Modifiers) void {
@@ -620,6 +639,10 @@ pub fn getBlockWithSide(comptime side: main.sync.Side, x: i32, y: i32, z: i32) ?
 }
 
 pub fn update(deltaTime: f64) void { // MARK: update()
+	_ = @"cubyz:physics_body".getPositionPointer(main.game.player.id, .client) orelse {
+		std.log.debug("could not find component physics_body: are you sure the server is the right branch?", .{});
+		return;
+	};
 	if (world.?.shouldRestart.load(.acquire)) {
 		restart();
 	}
@@ -629,213 +652,7 @@ pub fn update(deltaTime: f64) void { // MARK: update()
 		return;
 	};
 
-	physics.calculateVolumeProperties(.client, &player.volumeProperties, player.super.pos, player.outerBoundingBox, physics.playerAirTerminalVelocity);
-	if (player.isFlying.load(.monotonic)) {
-		player.friction = .{.current = 20, .mobile = 20};
-	} else {
-		physics.calculateFriction(.client, &player.volumeProperties, &player.friction, player.super.pos, player.outerBoundingBox, player.onGround);
-	}
-	var acc = Vec3d{0, 0, 0};
-	const speedMultiplier: f32 = if (player.hyperSpeed.load(.monotonic)) 4.0 else 1.0;
-
-	const density = if (player.isFlying.load(.monotonic)) 0.0 else player.volumeProperties.density;
-	const maxDensity = if (player.isFlying.load(.monotonic)) 0.0 else player.volumeProperties.maxDensity;
-
-	var jumping = false;
-	player.jumpCooldown -= deltaTime;
-	// At equillibrium we want to have dv/dt = a - λv = 0 → a = λ*v
-	const fricMul = speedMultiplier*player.friction.mobile;
-
-	const horizontalForward = vec.rotateZ(Vec3d{0, 1, 0}, -camera.rotation[2]);
-	const forward = vec.normalize(std.math.lerp(horizontalForward, camera.direction, @as(Vec3d, @splat(density/@max(1.0, maxDensity)))));
-	const right = Vec3d{-horizontalForward[1], horizontalForward[0], 0};
-	var movementDir: Vec3d = .{0, 0, 0};
-
-	player.inputSpeed = 0;
-
-	if (main.Window.grabbed) {
-		const walkingSpeed: f64 = if (player.crouching) 2.5 else 4.5;
-		var movementSpeed: f64 = walkingSpeed*@min(1, vec.length(Vec2f{
-			@max(keyboard.key("forward").value, keyboard.key("backward").value),
-			@max(keyboard.key("left").value, keyboard.key("right").value),
-		}));
-
-		var isSprintingOnGround = false;
-		var speedModifier = walkingSpeed;
-		if (keyboard.key("sprint").pressed and !player.crouching) {
-			if (player.isGhost.load(.monotonic)) {
-				speedModifier = 128;
-			} else if (player.isFlying.load(.monotonic)) {
-				speedModifier = 32;
-			} else {
-				isSprintingOnGround = true;
-			}
-		}
-
-		if (keyboard.key("forward").value > 0.0) {
-			var forwardSpeedModifier = speedModifier;
-			if (isSprintingOnGround) forwardSpeedModifier = 8;
-
-			const totalSpeed = forwardSpeedModifier*keyboard.key("forward").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += forward*@as(Vec3d, @splat(totalSpeed));
-		}
-		if (keyboard.key("backward").value > 0.0) {
-			const totalSpeed = speedModifier*keyboard.key("backward").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += forward*@as(Vec3d, @splat(-totalSpeed));
-		}
-		if (keyboard.key("left").value > 0.0) {
-			const totalSpeed = speedModifier*keyboard.key("left").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += right*@as(Vec3d, @splat(totalSpeed));
-		}
-		if (keyboard.key("right").value > 0.0) {
-			const totalSpeed = speedModifier*keyboard.key("right").value;
-			movementSpeed = @max(movementSpeed, totalSpeed);
-			movementDir += right*@as(Vec3d, @splat(-totalSpeed));
-		}
-		if (keyboard.key("jump").pressed) {
-			if (player.isFlying.load(.monotonic)) {
-				if (keyboard.key("sprint").pressed) {
-					if (player.isGhost.load(.monotonic)) {
-						movementSpeed = @max(movementSpeed, 60);
-						movementDir[2] += 60;
-					} else {
-						movementSpeed = @max(movementSpeed, 25);
-						movementDir[2] += 25;
-					}
-				} else {
-					movementSpeed = @max(movementSpeed, 5.5);
-					movementDir[2] += 5.5;
-				}
-			} else if ((player.onGround or player.jumpCoyote > 0.0) and player.jumpCooldown <= 0) {
-				jumping = true;
-				player.jumpCooldown = player.jumpCooldownConstant;
-				if (!player.onGround) {
-					player.eye.coyote = 0;
-				}
-				player.jumpCoyote = 0;
-			} else if (!keyboard.key("fall").pressed) {
-				movementSpeed = @max(movementSpeed, walkingSpeed);
-				movementDir[2] += walkingSpeed;
-			}
-		} else {
-			player.jumpCooldown = 0;
-		}
-		if (keyboard.key("fall").pressed) {
-			if (player.isFlying.load(.monotonic)) {
-				if (keyboard.key("sprint").pressed) {
-					if (player.isGhost.load(.monotonic)) {
-						movementSpeed = @max(movementSpeed, 60);
-						movementDir[2] -= 60;
-					} else {
-						movementSpeed = @max(movementSpeed, 25);
-						movementDir[2] -= 25;
-					}
-				} else {
-					movementSpeed = @max(movementSpeed, 5.5);
-					movementDir[2] -= 5.5;
-				}
-			} else if (!keyboard.key("jump").pressed) {
-				movementSpeed = @max(movementSpeed, walkingSpeed);
-				movementDir[2] -= walkingSpeed;
-			}
-		}
-
-		if (movementSpeed != 0 and vec.lengthSquare(movementDir) != 0) {
-			if (vec.lengthSquare(movementDir) > movementSpeed*movementSpeed) {
-				movementDir = vec.normalize(movementDir);
-			} else {
-				movementDir /= @splat(movementSpeed);
-			}
-			acc += movementDir*@as(Vec3d, @splat(movementSpeed*fricMul));
-		}
-
-		const newSlot: i32 = @as(i32, @intCast(player.selectedSlot)) -% main.Window.scrollOffsetInteger;
-		player.selectedSlot = @intCast(@mod(newSlot, 12));
-
-		const newPos = Vec2f{
-			@floatCast(main.keyboard.key("cameraRight").value - main.keyboard.key("cameraLeft").value),
-			@floatCast(main.keyboard.key("cameraDown").value - main.keyboard.key("cameraUp").value),
-		}*@as(Vec2f, @splat(std.math.pi*settings.controllerSensitivity));
-		main.game.camera.moveRotation(newPos[0]/64.0, newPos[1]/64.0);
-
-		player.inputSpeed = movementSpeed*speedMultiplier;
-	}
-
-	player.crouching = main.Window.grabbed and keyboard.key("crouch").pressed and !player.isFlying.load(.monotonic);
-
-	if (physics.collision.collides(.client, .x, 0, player.super.pos + player.standingBoundingBoxExtent - player.crouchingBoundingBoxExtent, .{
-		.min = -player.standingBoundingBoxExtent,
-		.max = player.standingBoundingBoxExtent,
-	}) == null) {
-		if (player.onGround) {
-			if (player.crouching) {
-				player.crouchPerc += @floatCast(deltaTime*10);
-			} else {
-				player.crouchPerc -= @floatCast(deltaTime*10);
-			}
-			player.crouchPerc = std.math.clamp(player.crouchPerc, 0, 1);
-		}
-
-		const smoothPerc = player.crouchPerc*player.crouchPerc*(3 - 2*player.crouchPerc);
-
-		const newOuterBox = (player.crouchingBoundingBoxExtent - player.standingBoundingBoxExtent)*@as(Vec3d, @splat(smoothPerc)) + player.standingBoundingBoxExtent;
-
-		player.super.pos += newOuterBox - player.outerBoundingBoxExtent + Vec3d{0.0, 0.0, 0.0001*@abs(newOuterBox[2] - player.outerBoundingBoxExtent[2])};
-
-		player.outerBoundingBoxExtent = newOuterBox;
-
-		player.outerBoundingBox = .{
-			.min = -player.outerBoundingBoxExtent,
-			.max = player.outerBoundingBoxExtent,
-		};
-		player.eye.box = .{
-			.min = -Vec3d{player.outerBoundingBoxExtent[0]*0.2, player.outerBoundingBoxExtent[1]*0.2, player.outerBoundingBoxExtent[2] - 0.2},
-			.max = Vec3d{player.outerBoundingBoxExtent[0]*0.2, player.outerBoundingBoxExtent[1]*0.2, player.outerBoundingBoxExtent[2] - 0.05},
-		};
-		player.eye.desiredPos = (Vec3d{0, 0, 1.3 - player.crouchingBoundingBoxExtent[2]} - Vec3d{0, 0, 1.7 - player.standingBoundingBoxExtent[2]})*@as(Vec3f, @splat(smoothPerc)) + Vec3d{0, 0, 1.7 - player.standingBoundingBoxExtent[2]};
-	}
-
-	const gravity: f64 = if (player.isFlying.load(.monotonic)) 0.0 else physics.baseGravity;
-	const jumpHeight: f64 = if (jumping) player.jumpHeight else 0.0;
-	var motion = physics.calculateMotion(.client, deltaTime, player.friction, player.volumeProperties, physics.playerDensity, player.super.pos, &player.super.vel, acc, gravity, jumpHeight);
-
-	{
-		player.mutex.lock();
-		defer player.mutex.unlock();
-
-		var stepAmount: f64 = 0.0;
-		if (!player.isGhost.load(.monotonic)) {
-			const steppingHeightLimit = player.eye.pos[2] - player.eye.box.min[2];
-			stepAmount = physics.calculateWallCollision(.client, &motion, &player.super.pos, &player.super.vel, &player.onGround, player.friction, player.outerBoundingBox, player.steppingHeight()[2], steppingHeightLimit, player.crouching);
-		}
-		physics.calculateEyeMovement(.client, deltaTime, player.super.pos, player.super.vel, &player.eye, stepAmount);
-		var didCollide: bool = false;
-		const wasOnGround = player.onGround;
-		const prevPos = player.super.pos;
-		const prevVel = player.super.vel;
-		if (!player.isGhost.load(.monotonic)) {
-			const bouncinessMultiplier: f64 = if (player.isFlying.load(.monotonic)) 0.0 else if (player.crouching) 0.5 else 1.0;
-			didCollide = physics.calculateVerticalCollision(.client, deltaTime, &player.super.pos, &player.super.vel, &player.jumpCoyote, &player.onGround, player.outerBoundingBox, motion, bouncinessMultiplier);
-			if (didCollide) {
-				const velocityChange = @abs(@abs(prevVel[2]) - @abs(player.super.vel[2]));
-				const damage: f32 = @floatCast(@round(@max((velocityChange*velocityChange)/(2*physics.baseGravity) - 7, 0))/2);
-				if (damage > 0.01) {
-					main.sync.addHealth(-damage, .fall, .client, player.id);
-				}
-			}
-			physics.calculateVerticalCollisionEyeMovement(deltaTime, &player.eye, didCollide, player.onGround, wasOnGround, prevPos, player.super.pos, prevVel, player.super.vel, motion, player.steppingHeight()[2]);
-			physics.collision.touchBlocks(.client, &player.super, player.outerBoundingBox, deltaTime);
-		} else {
-			player.super.pos += motion;
-		}
-
-		player.eye.pos = @max(player.eye.box.min, @min(player.eye.pos, player.eye.box.max));
-		player.eye.coyote -= deltaTime;
-		player.jumpCoyote -= deltaTime;
-	}
+	main.systems.systems.update.client.update(deltaTime);
 
 	const time = main.timestamp();
 	if (nextBlockPlaceTime) |*placeTime| {

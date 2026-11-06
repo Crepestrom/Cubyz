@@ -34,6 +34,8 @@ pub const BlockDrop = @import("BlockDrop.zig");
 
 pub const command = @import("command.zig");
 
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
+
 pub const WorldEditData = struct {
 	const maxWorldEditHistoryCapacity: u32 = 1024;
 
@@ -305,11 +307,37 @@ pub const User = struct { // MARK: User
 				main.entity.components.@"cubyz:model".server.put(self.id, .{.entityModel = defaultModel});
 			}
 		}
+		if (main.entity.components.@"cubyz:health".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:health".server.loadFromNumber(self.id, 8);
+		}
+		if (main.entity.components.@"cubyz:energy".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:energy".server.loadFromNumber(self.id, 8);
+		}
+		const decisecondCorrection = 10;
+		main.entity.components.@"cubyz:passive_energy_regen".server.loadFromValues(self.id, 2, 3*decisecondCorrection);
+		if (main.entity.components.@"cubyz:momentum".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:momentum".server.loadFromNumber(self.id, 8);
+		}
+		if (main.entity.components.@"cubyz:ammo".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:ammo".server.loadFromNumber(self.id, 5);
+		}
+		if (main.entity.components.@"cubyz:mana_charge".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:mana_charge".server.loadFromNumber(self.id, 8);
+		}
 		if (main.entity.components.@"cubyz:bag".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:bag".server.loadEmpty(self.id);
 		}
 		if (main.entity.components.@"cubyz:permissions".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:permissions".server.loadEmpty(self.id);
+		}
+		if (main.entity.components.@"cubyz:player_hand_animation".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:player_hand_animation".server.loadEmpty(self.id);
+		}
+		if (main.entity.components.@"cubyz:physics_body".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:physics_body".server.loadFromValues(self.id, getSpawnPos(self), .{0, 0, 0}, .{0, 0, 0});
+		}
+		if (main.entity.components.@"cubyz:hitbox".server.get(self.id) == null) {
+			main.entity.components.@"cubyz:hitbox".server.loadFromValues(self.id, Vec3d{0, 0, main.game.player.standingBoundingBoxExtent[2]}, main.game.player.standingBoundingBoxExtent*Vec3d{2, 2, 2});
 		}
 		main.entity.components.@"cubyz:permissions".server.addToGroup(self.id, permission.Group.default);
 
@@ -320,7 +348,7 @@ pub const User = struct { // MARK: User
 			}
 		}
 
-		self.interpolation.init(@ptrCast(&self.player().pos), @ptrCast(&self.player().vel));
+		self.interpolation.init(@ptrCast(@"cubyz:physics_body".getPositionPointer(self.id, .server)), @ptrCast(@"cubyz:physics_body".getVelocityPointer(self.player().id, .server)));
 		self.loadUnloadChunks();
 
 		main.entity.components.@"cubyz:player".server.load(self.id, @truncate(self.playerIndex));
@@ -378,7 +406,8 @@ pub const User = struct { // MARK: User
 	}
 
 	fn loadUnloadChunks(self: *User) void {
-		const newPos: Vec3i = @as(Vec3i, @trunc(self.player().pos)) +% @as(Vec3i, @splat(chunk.chunkSize/2)) & ~@as(Vec3i, @splat(chunk.chunkMask));
+		const playerPos = @"cubyz:physics_body".getPosition(self.player().id, .server).?;
+		const newPos: Vec3i = @as(Vec3i, @trunc(playerPos)) +% @as(Vec3i, @splat(chunk.chunkSize/2)) & ~@as(Vec3i, @splat(chunk.chunkMask));
 		const newRenderDistance = main.settings.simulationDistance;
 		if (@reduce(.Or, newPos != self.lastPos) or newRenderDistance != self.lastRenderDistance) {
 			self.unloadOldChunk(newPos, newRenderDistance);
@@ -545,7 +574,7 @@ pub const User = struct { // MARK: User
 		const position: [3]f64 = try reader.readVec(Vec3d);
 		const velocity: [3]f64 = try reader.readVec(Vec3d);
 		const rotation: [3]f32 = try reader.readVec(Vec3f);
-		self.player().rot = rotation;
+		@"cubyz:physics_body".setRotation(self.player().id, rotation, .server);
 		const time = try reader.readInt(i16);
 		self.timeDifference.addDataPoint(time);
 		self.interpolation.updatePosition(&position, &velocity, time);
@@ -594,7 +623,6 @@ fn init(name: []const u8, singlePlayerPort: ?u16, mode: ServerWorld.Mode) void {
 	users = .init(main.globalAllocator);
 	lastTime = main.timestamp();
 
-	main.systems.server.init();
 	main.entity.server.init();
 	main.items.Inventory.server.init();
 	main.sync.server.init();
@@ -603,6 +631,8 @@ fn init(name: []const u8, singlePlayerPort: ?u16, mode: ServerWorld.Mode) void {
 		std.log.err("Failed to create world: {s}", .{@errorName(err)});
 		@panic("Can't create world.");
 	};
+
+	main.systems.server.init();
 
 	world.?.generate() catch |err| {
 		std.log.err("Failed to generate world: {s}", .{@errorName(err)});
@@ -676,7 +706,7 @@ fn getInitialEntityList(allocator: main.heap.NeverFailingAllocator) []const u8 {
 
 fn update() void { // MARK: update()
 	world.?.update();
-	main.systems.server.update();
+	main.systems.systems.update.server.update();
 	stdin_handler.update();
 
 	while (userConnectList.popFront()) |user| {
@@ -700,17 +730,18 @@ fn update() void { // MARK: update()
 		const id = user.id; // TODO
 		entityData.append(.{
 			.id = id,
-			.pos = user.player().pos,
-			.vel = user.player().vel,
-			.rot = user.player().rot,
+			.pos = @"cubyz:physics_body".getPosition(user.player().id, .server).?,
+			.vel = @"cubyz:physics_body".getVelocity(user.player().id, .server).?,
+			.rot = @"cubyz:physics_body".getRotation(user.player().id, .server).?,
 		});
 	}
 	for (userList) |user| {
-		main.network.protocols.entity_position.send(user.conn, user.player().pos, entityData.items, itemData);
+		main.network.protocols.entity_position.send(user.conn, @"cubyz:physics_body".getPosition(user.player().id, .server).?, entityData.items, itemData);
 	}
 
 	for (userList) |user| {
-		const pos = @as(Vec3i, @trunc(user.player().pos));
+		const playerPos = @"cubyz:physics_body".getPosition(user.player().id, .server).?;
+		const pos = @as(Vec3i, @trunc(playerPos));
 		const biomeId = world.?.getBiome(pos[0], pos[1], pos[2]).paletteId;
 		if (biomeId != user.lastSentBiomeId) {
 			user.lastSentBiomeId = biomeId;

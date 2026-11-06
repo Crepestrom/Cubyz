@@ -11,6 +11,8 @@ const settings = @import("settings.zig");
 const player = main.game.player;
 const camera = main.game.camera;
 
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
+
 pub const baseGravity = 30.0;
 pub const playerAirTerminalVelocity = 90.0;
 pub const airDensity = 0.001;
@@ -272,12 +274,14 @@ pub const collision = struct { // MARK: collision
 		// First argument is amount we end up moving in dir, second argument is how far up we step
 		var resultingMovement: Vec3d = .{0, 0, 0};
 		resultingMovement[index] = amount;
+
 		var checkPos = pos;
 		checkPos[index] += amount;
 
 		if (collision.collides(side, dir, -amount, checkPos, hitBox)) |box| {
 			const newFloor = box.max[2] + hitBox.max[2] + epsilon;
 			const heightDifference = newFloor - checkPos[2];
+
 			if (heightDifference <= steppingHeight) {
 				// If we collide but might be able to step up
 				checkPos[2] = newFloor;
@@ -314,7 +318,8 @@ pub const collision = struct { // MARK: collision
 	}
 
 	pub fn touchBlocks(comptime side: main.sync.Side, entity: *main.server.Entity, hitBox: Box, deltaTime: f64) void {
-		const boundingBox: Box = .{.min = entity.pos + hitBox.min, .max = entity.pos + hitBox.max};
+		const entityPos = @"cubyz:physics_body".getPosition(entity.id, side).?;
+		const boundingBox: Box = .{.min = entityPos + hitBox.min, .max = entityPos + hitBox.max};
 
 		const minX: i32 = @floor(boundingBox.min[0] - 0.01);
 		const maxX: i32 = @floor(boundingBox.max[0] + 0.01);
@@ -409,6 +414,7 @@ pub fn calculateMotion(comptime side: main.sync.Side, deltaTime: f64, friction: 
 			// x(t) = a/λt - c_1/λ e^(λ (-t)) + C
 			// With x(0) = 0 we get C = c_1/λ
 			// x(t) = a/λt - c_1/λ e^(λ (-t)) + c_1/λ
+			if (frictionCoefficient == 0) std.log.err("frictionCoefficent cannot be 0", .{});
 			const c_1 = v_0 - a/frictionCoefficient;
 			velocity[i] = a/frictionCoefficient + c_1*@exp(-frictionCoefficient*deltaTime);
 			move[i] = a/frictionCoefficient*deltaTime - c_1/frictionCoefficient*@exp(-frictionCoefficient*deltaTime) + c_1/frictionCoefficient;
@@ -522,6 +528,7 @@ pub fn calculateWallCollision(comptime side: main.sync.Side, motion: *Vec3d, pos
 	const slipLimit = 0.25*frictionState.current;
 
 	const xMovement = collision.collideOrStep(side, .x, motion[0], pos.*, hitBox, adjustedSteppingHeight);
+
 	pos.* += xMovement;
 	if (crouching and onGround.* and @abs(vel[0]) < slipLimit) {
 		if (collision.collides(side, .x, 0, pos.* - Vec3d{0, 0, 1}, hitBox) == null) {

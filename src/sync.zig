@@ -21,6 +21,12 @@ const ZonElement = main.ZonElement;
 const BlockDrop = main.server.BlockDrop;
 
 const @"cubyz:bag" = main.entity.components.@"cubyz:bag";
+const @"cubyz:health" = main.entity.components.@"cubyz:health";
+const @"cubyz:energy" = main.entity.components.@"cubyz:energy";
+const @"cubyz:momentum" = main.entity.components.@"cubyz:momentum";
+const @"cubyz:ammo" = main.entity.components.@"cubyz:ammo";
+const @"cubyz:mana_charge" = main.entity.components.@"cubyz:mana_charge";
+const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 pub const Side = enum { client, server };
 
@@ -283,6 +289,7 @@ pub const Command = struct { // MARK: Command
 		updateBlock = 9,
 		addHealth = 10,
 		chatCommand = 12,
+		useItem = 19,
 	};
 	pub const Payload = union(PayloadType) {
 		open: Open,
@@ -304,6 +311,7 @@ pub const Command = struct { // MARK: Command
 		updateBlock: UpdateBlock,
 		addHealth: AddHealth,
 		chatCommand: ChatCommand,
+		useItem: UseItem
 	};
 
 	const BaseOperationType = enum(u8) {
@@ -377,9 +385,7 @@ pub const Command = struct { // MARK: Command
 		create = 0,
 		delete = 1,
 		useDurability = 2,
-		health = 3,
 		kill = 4,
-		energy = 5,
 		rotation = 6,
 	};
 
@@ -400,17 +406,9 @@ pub const Command = struct { // MARK: Command
 			inv: InventoryAndSlot,
 			durability: u32,
 		},
-		health: struct {
-			target: ?*main.server.User,
-			health: f32,
-		},
 		kill: struct {
 			target: ?*main.server.User,
 			spawnPoint: Vec3d,
-		},
-		energy: struct {
-			target: ?*main.server.User,
-			energy: f32,
 		},
 		rotation: struct {
 			target: ?*main.server.User,
@@ -453,14 +451,8 @@ pub const Command = struct { // MARK: Command
 
 					durability.inv.inv.update();
 				},
-				.health => |health| {
-					main.game.player.super.health = std.math.clamp(main.game.player.super.health + health.health, 0, main.game.player.super.maxHealth);
-				},
 				.kill => |kill| {
 					main.game.player.kill(kill.spawnPoint);
-				},
-				.energy => |energy| {
-					main.game.player.super.energy = std.math.clamp(main.game.player.super.energy + energy.energy, 0, main.game.player.super.maxEnergy);
 				},
 				.rotation => |rotation| {
 					main.game.camera.rotation = rotation.rotation;
@@ -478,7 +470,7 @@ pub const Command = struct { // MARK: Command
 					}
 					return result;
 				},
-				inline .health, .kill, .energy, .rotation => |data| {
+				inline .kill, .rotation => |data| {
 					const out = allocator.alloc(*main.server.User, 1);
 					out[0] = data.target.?;
 					return out;
@@ -488,7 +480,7 @@ pub const Command = struct { // MARK: Command
 
 		pub fn ignoreSource(self: SyncOperation) bool {
 			return switch (self) {
-				.create, .delete, .useDurability, .health, .energy, .rotation => true,
+				.create, .delete, .useDurability, .rotation => true,
 				.kill => false,
 			};
 		}
@@ -521,22 +513,10 @@ pub const Command = struct { // MARK: Command
 
 					return out;
 				},
-				.health => {
-					return .{.health = .{
-						.target = null,
-						.health = try reader.readFloat(f32),
-					}};
-				},
 				.kill => {
 					return .{.kill = .{
 						.target = null,
 						.spawnPoint = try reader.readVec(Vec3d),
-					}};
-				},
-				.energy => {
-					return .{.energy = .{
-						.target = null,
-						.energy = try reader.readFloat(f32),
 					}};
 				},
 				.rotation => {
@@ -567,14 +547,8 @@ pub const Command = struct { // MARK: Command
 					durability.inv.write(&writer);
 					writer.writeInt(u32, durability.durability);
 				},
-				.health => |health| {
-					writer.writeFloat(f32, health.health);
-				},
 				.kill => |kill| {
 					writer.writeVec(Vec3d, kill.spawnPoint);
-				},
-				.energy => |energy| {
-					writer.writeFloat(f32, energy.energy);
 				},
 				.rotation => |rotation| {
 					writer.writeVec(Vec3f, rotation.rotation);
@@ -681,12 +655,8 @@ pub const Command = struct { // MARK: Command
 					info.item.proceduralItem.durability = info.previousDurability;
 					info.source.inv.update();
 				},
-				.addHealth => |info| {
-					main.game.player.super.health = info.previous;
-				},
-				.addEnergy => |info| {
-					main.game.player.super.energy = info.previous;
-				},
+				.addHealth => {},
+				.addEnergy => {},
 			}
 		}
 	}
@@ -846,41 +816,29 @@ pub const Command = struct { // MARK: Command
 			},
 			.addHealth => |*info| {
 				if (side == .server) {
-					info.previous = info.target.?.player().health;
+					info.previous = @"cubyz:health".server.getHealth(info.target.?.player().id) orelse return;
 
-					info.target.?.player().health = std.math.clamp(info.target.?.player().health + info.health, 0, info.target.?.player().maxHealth);
-
-					if (info.target.?.player().health <= 0) {
-						info.target.?.player().health = info.target.?.player().maxHealth;
+					const isKilled = main.systems.systems.health.server.addHealth(info.target.?.player().id, info.health, info.cause);
+					if (isKilled) {
+						main.entity.components.@"cubyz:health".server.resetHealth(info.target.?.player().id);
 						info.cause.sendMessage(info.target.?.name);
-
 						self.syncOperations.append(allocator, .{.kill = .{
 							.target = info.target.?,
 							.spawnPoint = info.target.?.getSpawnPos(),
 						}});
-					} else {
-						self.syncOperations.append(allocator, .{.health = .{
-							.target = info.target.?,
-							.health = info.health,
-						}});
 					}
 				} else {
-					info.previous = main.game.player.super.health;
-					main.game.player.super.health = std.math.clamp(main.game.player.super.health + info.health, 0, main.game.player.super.maxHealth);
+					info.previous = @"cubyz:health".client.getPredictedHealth(main.game.player.id) orelse return;
+					@"cubyz:health".client.changePredictedHealth(main.game.player.id, info.health);
 				}
 			},
 			.addEnergy => |*info| {
 				if (side == .server) {
-					info.previous = info.target.?.player().energy;
-
-					info.target.?.player().energy = std.math.clamp(info.target.?.player().energy + info.energy, 0, info.target.?.player().maxEnergy);
-					self.syncOperations.append(allocator, .{.energy = .{
-						.target = info.target.?,
-						.energy = info.energy,
-					}});
+					info.previous = @"cubyz:energy".server.getEnergy(info.target.?.player().id) orelse return;
+					main.systems.systems.energy.server.addEnergy(info.target.?.player().id, info.energy);
 				} else {
-					info.previous = main.game.player.super.energy;
-					main.game.player.super.energy = std.math.clamp(main.game.player.super.energy + info.energy, 0, main.game.player.super.maxEnergy);
+					info.previous = @"cubyz:energy".server.getEnergy(main.game.player.id) orelse return;
+					@"cubyz:energy".client.changePredictedEnergy(info.target.?.player().id, info.energy);
 				}
 			},
 		}
@@ -1162,8 +1120,9 @@ pub const Command = struct { // MARK: Command
 
 			const amount = @min(self.source.ref().amount, self.desiredAmount);
 			if (ctx.side == .server) {
-				const direction = vec.rotateZ(vec.rotateX(Vec3f{0, 1, 0}, -ctx.user.?.player().rot[0]), -ctx.user.?.player().rot[2]);
-				main.server.world.?.dropWithCooldown(.{.item = self.source.ref().item.clone(), .amount = amount}, ctx.user.?.player().pos, direction, 20, main.server.updatesPerSec*2);
+				const entityRotation = @"cubyz:physics_body".getRotation(ctx.user.?.player().id, .server).?;
+				const direction = vec.rotateZ(vec.rotateX(Vec3f{0, 1, 0}, -entityRotation[0]), -entityRotation[2]);
+				main.server.world.?.dropWithCooldown(.{.item = self.source.ref().item.clone(), .amount = amount}, @"cubyz:physics_body".getPosition(ctx.user.?.player().id, .server) orelse return, direction, 20, main.server.updatesPerSec*2);
 			}
 			ctx.execute(.{.delete = .{
 				.source = self.source,
@@ -1324,7 +1283,10 @@ pub const Command = struct { // MARK: Command
 				const remainingAmount = self.destinations.putItemsInto(ctx, sourceStack.amount, .{.move = .{.inv = self.source, .slot = @intCast(sourceSlot)}});
 				if (remainingAmount == 0) continue;
 				if (ctx.side == .server) {
-					const direction = if (ctx.user) |_user| vec.rotateZ(vec.rotateX(Vec3f{0, 1, 0}, -_user.player().rot[0]), -_user.player().rot[2]) else Vec3f{0, 0, 0};
+					const direction = if (ctx.user) |_user| blk: {
+						const entityRotation = @"cubyz:physics_body".getRotation(_user.player().id, .server).?;
+						break :blk vec.rotateZ(vec.rotateX(Vec3f{0, 1, 0}, -entityRotation[0]), -entityRotation[2]);
+					} else Vec3f{0, 0, 0};
 					main.server.world.?.drop(sourceStack.clone(), self.dropLocation, direction, 20);
 				}
 				ctx.execute(.{.delete = .{
@@ -1346,7 +1308,7 @@ pub const Command = struct { // MARK: Command
 			return .{
 				.destinations = destinations,
 				.source = Inventory.getInventory(sourceId, side, user) orelse return error.InventoryNotFound,
-				.dropLocation = (user orelse return error.Invalid).player().pos,
+				.dropLocation = @"cubyz:physics_body".getPosition((user orelse return error.Invalid).player().id, side) orelse return error.MissingPositionComponent,
 			};
 		}
 	};
@@ -1725,7 +1687,7 @@ pub const Command = struct { // MARK: Command
 				.target = target,
 				.health = self.health,
 				.cause = self.cause,
-				.previous = if (ctx.side == .server) target.?.player().health else main.game.player.super.health,
+				.previous = if (ctx.side == .server) (@"cubyz:health".server.getHealth(target.?.player().id) orelse return) else (@"cubyz:health".client.getPredictedHealth(main.game.player.id) orelse return),
 			}});
 		}
 
@@ -1770,6 +1732,70 @@ pub const Command = struct { // MARK: Command
 			const len = try reader.readVarInt(usize);
 			return .{
 				.message = main.globalAllocator.dupe(u8, try reader.readSlice(len)),
+			};
+		}
+	};
+
+	pub const UseType = enum(u2) {
+		normal = 0,
+		alt = 1,
+		normalEnd = 2,
+		altEnd = 3,
+	};
+
+	const UseItem = struct { // MARK: UseItem
+		target: main.entity.Entity,
+		source: InventoryAndSlot,
+		useType: UseType,
+
+		pub fn run(self: UseItem, ctx: Context) error{serverFailure}!void {
+			var target: ?*main.server.User = null;
+
+			if (ctx.side == .server) {
+				const userList = main.server.getUserList(main.stackAllocator);
+				defer main.stackAllocator.free(userList);
+				for (userList) |user| {
+					if (user.id == self.target) {
+						target = user;
+						break;
+					}
+				}
+
+				if (target == null) return error.serverFailure;
+			}
+
+			const item = self.source.inv.getItem(self.source.slot);
+			if (threadContext == .server) {
+				switch (item) {
+					.null,
+					.baseItem,
+					.proceduralItem => {
+						_ = item.proceduralItem.type.onUse().run(.{ .entity = target.?.*.id , .useType = self.useType});
+					},
+				}
+			}
+			if (threadContext == .client) {
+				switch (item) {
+					.null,
+					.baseItem,
+					.proceduralItem => {
+						_ = item.proceduralItem.type.onUse().run(.{ .entity = main.game.player.id , .useType = self.useType});
+					},
+				}
+			}
+		}
+
+		fn serialize(self: UseItem, writer: *BinaryWriter) void {
+			writer.writeEnum(main.entity.Entity, self.target);
+			self.source.write(writer);
+			writer.writeEnum(UseType, self.useType);
+		}
+
+		fn deserialize(reader: *BinaryReader, side: Side, user: ?*main.server.User) !UseItem {
+			return .{
+				.target = try reader.readEnum(main.entity.Entity),
+				.source = try InventoryAndSlot.read(reader, side, user),
+				.useType = try reader.readEnum(UseType),
 			};
 		}
 	};

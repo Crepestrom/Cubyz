@@ -1,0 +1,84 @@
+const std = @import("std");
+
+const main = @import("main");
+const chunk = main.chunk;
+const ServerChunk = chunk.ServerChunk;
+const game = main.game;
+const graphics = main.graphics;
+const ZonElement = main.ZonElement;
+const renderer = main.renderer;
+const settings = main.settings;
+const utils = main.utils;
+const BinaryReader = utils.BinaryReader;
+const BinaryWriter = utils.BinaryWriter;
+const vec = main.vec;
+const Mat4f = vec.Mat4f;
+const Vec3d = vec.Vec3d;
+const Vec3f = vec.Vec3f;
+const Vec4f = vec.Vec4f;
+const Vec3i = vec.Vec3i;
+const NeverFailingAllocator = main.heap.NeverFailingAllocator;
+const blocks = main.blocks;
+const World = game.World;
+const ServerWorld = main.server.ServerWorld;
+const items = main.items;
+const ItemStack = items.ItemStack;
+const random = main.random;
+const systems = main.systems;
+const entity = main.entity;
+const Entity = entity.Entity;
+
+const c = @import("c");
+
+const entityComponent = main.entityComponent;
+
+// ############################# Client only stuff ################################
+pub const client = struct {
+	pub fn init() void {}
+	pub fn deinit() void {}
+	pub fn clear() void {}
+
+	pub fn render(currentFrame: *graphics.vulkan.Frame, ambientLight: Vec3f, playerPos: Vec3d, deltaTime: f64) void {
+		_ = currentFrame;
+		_ = ambientLight;
+		_ = playerPos;
+		_ = deltaTime;
+	}
+	pub fn renderHud(currentFrame: *graphics.vulkan.Frame, ambientLight: Vec3f, playerPos: Vec3d) void {
+		_ = currentFrame;
+		_ = ambientLight;
+		_ = playerPos;
+	}
+};
+// ############################# Server only stuff ################################
+pub const server = struct {
+	pub fn init() void {}
+	pub fn deinit() void {}
+
+	pub const SelectionOptions = struct {
+		ignoreSelf: ?Entity,
+	};
+
+	pub fn selectInSphere(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity) void) void {
+		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
+			const boundingBox: Vec3d = @splat(radius);
+			const relativePos: Vec3d = position - (component.offset + (main.entity.components.@"cubyz:physics_body".getPosition(id) orelse continue));
+			if (boundingBox[0] < relativePos[0]) return;
+			if (boundingBox[1] < relativePos[1]) return;
+			if (boundingBox[2] < relativePos[2]) return;
+			functionApplied(id);
+		}
+	}
+	pub fn selectInCube(position: Vec3d, radius: f64, functionApplied: *const fn (entity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void, options: SelectionOptions) void {
+		for (entity.components.@"cubyz:hitbox".server.components.dense.items, entity.components.@"cubyz:hitbox".server.components.denseToSparseIndex.items) |component, id| {
+			const combinedBoundingBox: Vec3d = @as(Vec3d, @splat(radius)) + component.size;
+			const entityPos = main.entity.components.@"cubyz:physics_body".getPosition(id, .server) orelse continue;
+			const relativePos: Vec3d = @abs(position - entityPos);
+			if (combinedBoundingBox[0] < relativePos[0]) continue;
+			if (combinedBoundingBox[1] < relativePos[1]) continue;
+			if (combinedBoundingBox[2] < relativePos[2]) continue;
+			if (options.ignoreSelf != null) {if (options.ignoreSelf.? == id) continue;}
+			functionApplied(id, position, entityPos);
+		}
+	}
+};
