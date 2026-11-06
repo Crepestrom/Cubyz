@@ -62,7 +62,6 @@ pub const client = struct {
 		var ptr: *Component = undefined;
 		if (components.get(entity)) |p| {
 			ptr = p;
-			std.log.debug("got message of thing that exists", .{});
 		} else {
 			ptr = components.add(main.globalAllocator, entity);
 		}

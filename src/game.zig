@@ -639,6 +639,10 @@ pub fn getBlockWithSide(comptime side: main.sync.Side, x: i32, y: i32, z: i32) ?
 }
 
 pub fn update(deltaTime: f64) void { // MARK: update()
+	_ = @"cubyz:physics_body".getPositionPointer(main.game.player.id, .client) orelse {
+		std.log.debug("could not find component physics_body: are you sure the server is the right branch?", .{});
+		return;
+	};
 	if (world.?.shouldRestart.load(.acquire)) {
 		restart();
 	}
