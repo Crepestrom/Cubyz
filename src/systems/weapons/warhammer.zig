@@ -151,7 +151,7 @@ pub const client = struct {
 
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) return;
-		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity, swingEnergyCost).?) return;
+		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing});
 	}
 	fn chargedSwing(givenEntity: Entity) void {
@@ -211,7 +211,6 @@ pub const server = struct {
 	}
 	fn chargedSwing(givenEntity: Entity) void {
 		if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("warhammerWindup")) orelse return)) return;
-		std.log.debug("fully charge strike", .{});
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerFullCharged);
 	}
 	pub fn releaseSwing(givenEntity: Entity) void {

@@ -105,7 +105,7 @@ pub const client = struct {
 
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
-		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity, swingEnergyCost).?) return;
+		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
 	}
 	pub fn block(givenEntity: Entity) void {

@@ -124,7 +124,6 @@ pub const server = struct {
 		}
 	}
 	pub fn removeFromBothSides(entity: Entity) void {
-		std.log.debug("testing", .{});
 		components.remove(entity) catch {};
 		main.entity.server.transmitChange(main.entity.components.@"cubyz:pavice_charging", entity);
 	}

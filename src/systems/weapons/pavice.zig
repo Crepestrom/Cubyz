@@ -131,12 +131,12 @@ pub const client = struct {
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) {
 			if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity, main.Tag.find("paviceBlock")) orelse return) {
-				if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity, chargeEnergyCost).?) return;
+				if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
 				@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceCharge"), .animationLength = 5});
 			}
 			return;
 		}
-		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity, swingEnergyCost).?) return;
+		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceSwing"), .animationLength = 10/@as(i64, @intFromFloat(swingsPerSecond))});
 	}
 	pub fn block(givenEntity: Entity) void {
@@ -178,9 +178,7 @@ pub const server = struct {
 
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
-			std.log.debug("tried to charge", .{});
 			if (@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, animations.paviceBlock.animationName) orelse return) {
-				std.log.debug("testesetse", .{});
 				@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.paviceCharge);
 				charge(givenEntity);
 			}

@@ -50,9 +50,9 @@ pub const client = struct {
 		_ = playerPos;
 	}
 
-	pub fn canPayEnergyCost(givenEntity: Entity, change: f32) ?bool {
+	pub fn canPayEnergyCost(givenEntity: Entity) ?bool {
 		const currentEnergy = main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null;
-		return (0 < (currentEnergy - change));
+		return (0 < currentEnergy);
 	}
 };
 // ############################# Server only stuff ################################

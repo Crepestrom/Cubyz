@@ -313,8 +313,8 @@ pub const User = struct { // MARK: User
 		if (main.entity.components.@"cubyz:energy".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:energy".server.loadFromNumber(self.id, 8);
 		}
-		const decisecondCorrection = 10;
-		main.entity.components.@"cubyz:passive_energy_regen".server.loadFromValues(self.id, 2, 3*decisecondCorrection);
+		const deciSecondCorrection = 10;
+		main.entity.components.@"cubyz:passive_energy_regen".server.loadFromValues(self.id, 2, 1*deciSecondCorrection);
 		if (main.entity.components.@"cubyz:momentum".server.get(self.id) == null) {
 			main.entity.components.@"cubyz:momentum".server.loadFromNumber(self.id, 8);
 		}
