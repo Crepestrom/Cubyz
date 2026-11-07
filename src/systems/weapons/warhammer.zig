@@ -167,7 +167,7 @@ pub const client = struct {
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
-			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("warhammerBlockEnd")) orelse true) return;
+			if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("warhammerBlockEnd")) orelse false)) return;
 		}
 
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerBlock"), .animationLength = 1, .loop = true});
@@ -264,7 +264,7 @@ pub const server = struct {
 
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
-			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, animations.warhammerBlockEnd.animationName) orelse true) return;
+			if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, animations.warhammerBlockEnd.animationName) orelse false)) return;
 		}
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.warhammerBlock);
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);

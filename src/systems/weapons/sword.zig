@@ -110,7 +110,7 @@ pub const client = struct {
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
-			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("swordBlockEnd")) orelse true) return;
+			if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("swordBlockEnd")) orelse false)) return;
 		}
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".client.find(givenEntity);
@@ -153,7 +153,7 @@ pub const server = struct {
 	}
 	pub fn block(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
-			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("swordBlockEnd")) orelse true) return;
+			if (!(@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("swordBlockEnd")) orelse false)) return;
 		}
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
