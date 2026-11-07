@@ -179,17 +179,16 @@ pub fn bindPipeline(self: CommandBuffer, currentFrame: *vulkan.Frame, pipeline: 
 	}
 }
 
+pub fn bindComputePipeline(self: CommandBuffer, pipeline: main.graphics.ComputePipeline) void {
+	c.vkCmdBindPipeline(self.handle, c.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.computePipeline);
+}
+
 pub fn bindVertexArray(self: CommandBuffer, buffer: main.graphics.VertexArray) void {
 	c.vkCmdBindVertexBuffers(self.handle, 0, 1, &buffer.buffer.handle, &@as(usize, 0));
 	if (buffer.hasIndices) {
 		c.vkCmdBindIndexBuffer(self.handle, buffer.buffer.handle, buffer.indicesOffset, c.VK_INDEX_TYPE_UINT32);
 	}
 }
-
-const DescriptorBindPoint = enum(c.VkPipelineBindPoint) {
-	graphics = c.VK_PIPELINE_BIND_POINT_GRAPHICS,
-	compute = c.VK_PIPELINE_BIND_POINT_COMPUTE,
-};
 
 const BindingInfo = union(enum) {
 	ssbo: struct {
@@ -213,7 +212,7 @@ const BindingInfo = union(enum) {
 	},
 };
 
-pub fn bindDescriptors(self: CommandBuffer, pipeline: main.graphics.Pipeline, bindPoint: DescriptorBindPoint, bindings: []const BindingInfo) void {
+pub fn bindDescriptors(self: CommandBuffer, pipeline: anytype, bindings: []const BindingInfo) void {
 	const arena = main.stackAllocator.createArena();
 	defer main.stackAllocator.destroyArena(arena);
 	const writeInfo = arena.alloc(c.VkWriteDescriptorSet, bindings.len);
@@ -259,10 +258,15 @@ pub fn bindDescriptors(self: CommandBuffer, pipeline: main.graphics.Pipeline, bi
 		}
 	}
 	const vkCmdPushDescriptorSet = if (builtin.target.os.tag == .macos) c.vkCmdPushDescriptorSet else c.vkCmdPushDescriptorSetKHR;
-	vkCmdPushDescriptorSet(self.handle, @backingInt(bindPoint), pipeline.pipelineLayout, 0, @intCast(writeInfo.len), writeInfo.ptr);
+	const bindPoint = switch (@TypeOf(pipeline)) {
+		main.graphics.Pipeline => c.VK_PIPELINE_BIND_POINT_GRAPHICS,
+		main.graphics.ComputePipeline => c.VK_PIPELINE_BIND_POINT_COMPUTE,
+		else => unreachable,
+	};
+	vkCmdPushDescriptorSet(self.handle, bindPoint, pipeline.pipelineLayout, 0, @intCast(writeInfo.len), writeInfo.ptr);
 }
 
-pub fn pushConstants(self: CommandBuffer, pipeline: main.graphics.Pipeline, constants: anytype) void {
+pub fn pushConstants(self: CommandBuffer, pipeline: anytype, constants: anytype) void {
 	comptime std.debug.assert(@typeInfo(@TypeOf(constants.*)).@"struct".layout == .@"extern");
 	c.vkCmdPushConstants(self.handle, pipeline.pipelineLayout, c.VK_SHADER_STAGE_ALL, 0, @sizeOf(@TypeOf(constants.*)), constants);
 }
@@ -275,12 +279,22 @@ pub fn setScissor(self: CommandBuffer, scissor: c.VkRect2D) void {
 	c.vkCmdSetScissor(self.handle, 0, 1, &scissor);
 }
 
-pub fn drawIndexed(self: CommandBuffer, indexCount: u32, firstVertex: i32) void {
-	c.vkCmdDrawIndexed(self.handle, indexCount, 1, 0, firstVertex, 0);
+const DrawIndexedOptions = struct {
+	firstIndex: u32 = 0,
+	firstVertex: i32 = 0,
+	firstInstance: u32 = 0,
+	instanceCount: u32 = 1,
+};
+pub fn drawIndexed(self: CommandBuffer, indexCount: u32, options: DrawIndexedOptions) void {
+	c.vkCmdDrawIndexed(self.handle, indexCount, options.instanceCount, options.firstIndex, options.firstVertex, options.firstInstance);
 }
 
 pub fn draw(self: CommandBuffer, vertexCount: u32, firstVertex: u32) void {
 	c.vkCmdDraw(self.handle, vertexCount, 1, firstVertex, 0);
+}
+
+pub fn dispatchCompute(self: CommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32) void {
+	c.vkCmdDispatch(self.handle, groupCountX, groupCountY, groupCountZ);
 }
 
 pub fn copyBuffer(self: CommandBuffer, dest: vulkan.Buffer, destOffset: usize, source: vulkan.Buffer, sourceOffset: usize, size: usize) void {
