@@ -36,6 +36,7 @@ const @"cubyz:physics_body" = main.entity.components.@"cubyz:physics_body";
 
 const entityComponent = main.entityComponent;
 const swingsPerSecond = 2;
+const swingEnergyCost = -2;
 
 // ############################# Client only stuff ################################
 pub const client = struct {
@@ -104,6 +105,7 @@ pub const client = struct {
 
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
+		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity, swingEnergyCost).?) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
 	}
 	pub fn block(givenEntity: Entity) void {

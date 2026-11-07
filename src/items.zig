@@ -637,7 +637,6 @@ const procedural_item_physics = struct { // MARK: procedural_item_physics
 				sum += property.weights[i]*material.getProperty(property.source orelse break);
 				weight += property.weights[i];
 			}
-			if ((property.resultScale < 0) and (property.destination == .swingSpeed)) sum = 1/sum;
 			if (weight == 0) continue;
 			switch (property.method) {
 				.sum => {},
