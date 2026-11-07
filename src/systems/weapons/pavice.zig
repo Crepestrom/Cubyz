@@ -140,7 +140,9 @@ pub const client = struct {
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceSwing"), .animationLength = 10/@as(i64, @intFromFloat(swingsPerSecond))});
 	}
 	pub fn block(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
+			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("paviceBlockEnd")) orelse true) return;
+		}
 
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".client.find(givenEntity);
@@ -206,7 +208,9 @@ pub const server = struct {
 		}
 	}
 	pub fn block(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
+			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, animations.paviceBlockEnd.animationName) orelse true) return;
+		}
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, animations.paviceBlock);
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
 		blockComponent.*.blockingPower = 0.5;

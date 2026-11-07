@@ -109,7 +109,9 @@ pub const client = struct {
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
 	}
 	pub fn block(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
+			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("swordBlockEnd")) orelse true) return;
+		}
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".client.find(givenEntity);
 		blockComponent.*.blockingPower = 0.5;
@@ -150,7 +152,9 @@ pub const server = struct {
 		}
 	}
 	pub fn block(givenEntity: Entity) void {
-		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
+		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) {
+			if (!@"cubyz:player_hand_animation".isPlayingAnimation(givenEntity, main.Tag.find("swordBlockEnd")) orelse true) return;
+		}
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
 		std.log.debug("start block server", .{});
