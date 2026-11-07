@@ -31,6 +31,28 @@ const c = @import("c");
 pub var entityComponentID: main.entity.EntityComponentId = undefined;
 pub const entityComponentVersion = 0;
 
+pub fn changeEnergy(entity: Entity, change: f32) void {
+	switch (main.sync.threadContext) {
+		.client => client.changePredictedEnergy(entity, change),
+		.server => server.addEnergy(entity, change),
+		else => {
+			std.log.debug("Should only run on a server or client thread", .{});
+			return;
+		},
+	}
+}
+
+pub fn getEnergy(entity: Entity) ?f32 {
+	return switch (main.sync.threadContext) {
+		.client => client.getPredictedEnergy(entity),
+		.server => server.getEnergy(entity),
+		else => {
+			std.log.debug("Should only run on a server or client thread", .{});
+			return null;
+		},
+	};
+}
+
 // ############################# Client only stuff ################################
 pub const client = struct {
 	const Component = struct {
@@ -49,12 +71,6 @@ pub const client = struct {
 
 	pub fn get(entity: Entity) ?*Component {
 		return (components.get(entity) orelse return null);
-	}
-	pub fn getPredictedEnergy(entity: Entity) ?f32 {
-		return (components.get(entity) orelse return null).energy;
-	}
-	pub fn getPredictedMaxEnergy(entity: Entity) ?f32 {
-		return (components.get(entity) orelse return null).maxEnergy;
 	}
 
 	pub fn load(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
@@ -76,6 +92,14 @@ pub const client = struct {
 		components.remove(entity) catch {};
 	}
 
+	pub fn getPredictedEnergy(entity: Entity) ?f32 {
+		main.sync.threadContext.assertCorrectContext(.client);
+		return (components.get(entity) orelse return null).energy;
+	}
+	pub fn getPredictedMaxEnergy(entity: Entity) ?f32 {
+		main.sync.threadContext.assertCorrectContext(.client);
+		return (components.get(entity) orelse return null).maxEnergy;
+	}
 	pub fn changePredictedEnergy(givenEntity: Entity, change: f32) void {
 		main.sync.threadContext.assertCorrectContext(.client);
 		const energyComponent = main.entity.components.@"cubyz:energy".client.components.get(givenEntity) orelse return;
@@ -111,12 +135,15 @@ pub const server = struct {
 	}
 
 	pub fn get(entity: Entity) ?*Component {
+		main.sync.threadContext.assertCorrectContext(.server);
 		return (components.get(entity) orelse return null);
 	}
 	pub fn getEnergy(entity: Entity) ?f32 {
+		main.sync.threadContext.assertCorrectContext(.server);
 		return (components.get(entity) orelse return null).energy;
 	}
 	pub fn getMaxEnergy(entity: Entity) ?f32 {
+		main.sync.threadContext.assertCorrectContext(.server);
 		return (components.get(entity) orelse return null).maxEnergy;
 	}
 	pub fn loadFromData(entity: Entity, reader: *utils.BinaryReader, version: u32) main.entity.EntityComponentLoadError!void {
@@ -142,13 +169,11 @@ pub const server = struct {
 		main.sync.threadContext.assertCorrectContext(.server);
 		const energyComponent = main.entity.components.@"cubyz:energy".server.components.get(entity) orelse return;
 		energyComponent.energy = std.math.clamp(energyComponent.energy + value, 0, energyComponent.maxEnergy);
-		main.entity.server.transmitChange(main.entity.components.@"cubyz:energy", entity);
 	}
 	pub fn setEnergy(entity: Entity, value: f32) void {
 		main.sync.threadContext.assertCorrectContext(.server);
 		const energyComponent = components.get(entity) orelse return;
 		energyComponent.energy = std.math.clamp(value, 0, energyComponent.maxEnergy);
-		main.entity.server.transmitChange(main.entity.components.@"cubyz:energy", entity);
 	}
 	pub fn resetEnergy(entity: Entity) void {
 		main.sync.threadContext.assertCorrectContext(.server);

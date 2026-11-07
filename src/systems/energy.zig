@@ -50,9 +50,29 @@ pub const client = struct {
 		_ = playerPos;
 	}
 
-	pub fn canPayEnergyCost(givenEntity: Entity) ?bool {
-		const currentEnergy = main.entity.components.@"cubyz:energy".client.getPredictedEnergy(givenEntity) orelse return null;
-		return (0 < currentEnergy);
+	pub fn addEnergy(givenEntity: Entity, change: f32) void {
+		const startingTags: [0]main.Tag = .{};
+		main.entity.components.@"cubyz:resource_change".client.loadFromPredictedValues(givenEntity, change, &startingTags);
+		systems.RunOrderManager.createBasicHook("addEnergyEvent", systems.systems, .client);
+		main.entity.components.@"cubyz:resource_change".client.unload(givenEntity);
+	}
+
+	pub const addEnergyEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedFunctionStep = .{.targetPhase = "end"},
+		.function = adjustEnergyChange,
+	};
+
+	fn adjustEnergyChange() void {
+		for (entity.components.@"cubyz:resource_change".client.components.dense.items, entity.components.@"cubyz:resource_change".client.components.denseToSparseIndex.items) |component, id| {
+			main.entity.components.@"cubyz:energy".changeEnergy(id, component.change);
+		}
+	}
+
+	pub fn payEnergyCost(givenEntity: Entity, change: f32) ?bool {
+		const currentEnergy = main.entity.components.@"cubyz:energy".getEnergy(givenEntity) orelse return null;
+		if (0 >= (currentEnergy)) return false;
+		addEnergy(givenEntity, change);
+		return true;
 	}
 };
 // ############################# Server only stuff ################################
@@ -68,12 +88,9 @@ pub const server = struct {
 	}
 
 	pub fn payEnergyCost(givenEntity: Entity, change: f32) ?bool {
-		const currentEnergy = main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null;
+		const currentEnergy = main.entity.components.@"cubyz:energy".getEnergy(givenEntity) orelse return null;
 		if (0 >= (currentEnergy)) return false;
-		const startingTags: [0]main.Tag = .{};
-		main.entity.components.@"cubyz:resource_change".server.loadFromValues(givenEntity, change, &startingTags);
-		systems.RunOrderManager.createBasicHook("addEnergyEvent", systems.systems, .server);
-		main.entity.components.@"cubyz:resource_change".server.unload(givenEntity);
+		addEnergy(givenEntity, change);
 		return true;
 	}
 

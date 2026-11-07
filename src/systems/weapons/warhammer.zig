@@ -151,7 +151,7 @@ pub const client = struct {
 
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) return;
-		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
+		if (!main.systems.systems.energy.client.payEnergyCost(givenEntity, swingEnergyCost).?) return;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("warhammerWindup"), .animationLength = 10, .onAnimationEnd = &chargedSwing});
 	}
 	fn chargedSwing(givenEntity: Entity) void {

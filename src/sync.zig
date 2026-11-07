@@ -838,7 +838,7 @@ pub const Command = struct { // MARK: Command
 					main.systems.systems.energy.server.addEnergy(info.target.?.player().id, info.energy);
 				} else {
 					info.previous = @"cubyz:energy".server.getEnergy(main.game.player.id) orelse return;
-					@"cubyz:energy".client.changePredictedEnergy(info.target.?.player().id, info.energy);
+					main.systems.systems.energy.client.addEnergy(info.target.?.player().id, info.energy);
 				}
 			},
 		}

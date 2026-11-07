@@ -131,12 +131,12 @@ pub const client = struct {
 	pub fn startSwing(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".client.isPlayingAnyAnimation(givenEntity) orelse true) {
 			if (@"cubyz:player_hand_animation".client.isPlayingAnimation(givenEntity, main.Tag.find("paviceBlock")) orelse return) {
-				if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
+				if (!main.systems.systems.energy.client.payEnergyCost(givenEntity, chargeEnergyCost).?) return;
 				@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceCharge"), .animationLength = 5});
 			}
 			return;
 		}
-		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
+		if (!main.systems.systems.energy.client.payEnergyCost(givenEntity, swingEnergyCost).?) return;
 		@"cubyz:player_hand_animation".setAnimation(givenEntity, .{.animationName = main.Tag.find("paviceSwing"), .animationLength = 10/@as(i64, @intFromFloat(swingsPerSecond))});
 	}
 	pub fn block(givenEntity: Entity) void {

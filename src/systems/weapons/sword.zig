@@ -105,7 +105,7 @@ pub const client = struct {
 
 	pub fn swingSword(givenEntity: Entity) void {
 		if (@"cubyz:player_hand_animation".isPlayingAnyAnimation(givenEntity) orelse true) return;
-		if (!main.systems.systems.energy.client.canPayEnergyCost(givenEntity).?) return;
+		if (!main.systems.systems.energy.client.payEnergyCost(givenEntity, swingEnergyCost).?) return;
 		@"cubyz:player_hand_animation".client.setPredictedAnimation(givenEntity, .{.animationName = main.Tag.find("swordSwing"), .animationLength = 10/swingsPerSecond});
 	}
 	pub fn block(givenEntity: Entity) void {
@@ -157,18 +157,15 @@ pub const server = struct {
 		}
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlock"), .animationLength = 1, .loop = true});
 		const blockComponent = @"cubyz:weapon_blocking".server.find(givenEntity);
-		std.log.debug("start block server", .{});
 		blockComponent.*.blockingPower = 0.5;
 	}
 	pub fn blockEnd(givenEntity: Entity) void {
 		if (!(@"cubyz:player_hand_animation".server.get(main.game.player.id).?.animationName orelse return == main.Tag.find("swordBlock"))) return;
 		@"cubyz:player_hand_animation".server.setAnimation(givenEntity, .{.animationName = main.Tag.find("swordBlockEnd"), .animationLength = 5});
-		std.log.debug("end block server", .{});
 		@"cubyz:weapon_blocking".server.unload(givenEntity);
 	}
 
 	fn dealDamage(givenEntity: Entity, sourcePosition: Vec3d, entityPosition: Vec3d) void {
-		std.log.debug("damaged a entity", .{});
 		_ = sourcePosition;
 		_ = entityPosition;
 		main.sync.addHealth(-1, .kill, .server, givenEntity);

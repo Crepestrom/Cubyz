@@ -51,6 +51,30 @@ pub const client = struct {
 		_ = ambientLight;
 		_ = playerPos;
 	}
+
+	pub const updateEvent: systems.RunOrderManager.FunctionHook(fn(deltaTime: f64) void) = .{
+		.addedPhase = .{.self = "passiveCombatResourceRegen", .targetSortPhase = "start", .sortDirection = .after, .priority = 0},
+		.addedFunctionStep = .{.targetPhase = "passiveCombatResourceRegen"},
+		.function = update,
+	};
+
+	fn update(deltaTime: f64) void {
+		_ = deltaTime;
+		for (@"cubyz:passive_energy_regen".client.components.dense.items, entity.components.@"cubyz:passive_energy_regen".client.components.denseToSparseIndex.items) |*component, id| {
+			component.update(id);
+		}
+	}
+
+	pub const addEnergyEvent: systems.RunOrderManager.FunctionHook(fn() void) = .{
+		.addedFunctionStep = .{.targetPhase = "end"},
+		.function = resetDelay,
+	};
+
+	fn resetDelay() void {
+		for (entity.components.@"cubyz:resource_change".client.components.dense.items, entity.components.@"cubyz:resource_change".client.components.denseToSparseIndex.items) |component, id| {
+			if (component.change < 0) @"cubyz:passive_energy_regen".resetDelayTime(id);
+		}
+	}
 };
 // ############################# Server only stuff ################################
 pub const server = struct {
@@ -76,7 +100,7 @@ pub const server = struct {
 
 	fn resetDelay() void {
 		for (entity.components.@"cubyz:resource_change".server.components.dense.items, entity.components.@"cubyz:resource_change".server.components.denseToSparseIndex.items) |component, id| {
-			if (component.change < 0) @"cubyz:passive_energy_regen".server.resetDelayTime(id);
+			if (component.change < 0) @"cubyz:passive_energy_regen".resetDelayTime(id);
 		}
 	}
 };
