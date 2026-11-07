@@ -51,7 +51,7 @@ pub const client = struct {
 	}
 
 	pub fn canPayEnergyCost(givenEntity: Entity) ?bool {
-		const currentEnergy = main.entity.components.@"cubyz:energy".server.getEnergy(givenEntity) orelse return null;
+		const currentEnergy = main.entity.components.@"cubyz:energy".client.getEnergy(givenEntity) orelse return null;
 		return (0 < currentEnergy);
 	}
 };
