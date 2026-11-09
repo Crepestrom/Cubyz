@@ -75,4 +75,10 @@ pub const server = struct {
 		if ((startPos[1] - endPos[1]) == 0) return @as(f64, std.math.sign(startPos[0] - endPos[0]))*std.math.pi;
 		return @as(f64, @max(std.math.sign(startPos[1] - endPos[1]), 0))*std.math.pi + std.math.atan(((startPos[0] - endPos[0])/(startPos[1] - endPos[1])));
 	}
+
+	fn moveAtRotation(position: *Vec3d, rotation: Vec3f) void {
+		const horizontalAngle: f32 = rotation[0];
+		const verticalAngle: f32 = rotation[2];
+		//.{@abs(combinedPos[0])*std.math.sin(horizontalAngle)*@abs(std.math.sin(verticalAngle)), @abs(combinedPos[1])*std.math.cos(horizontalAngle)*@abs(std.math.sin(verticalAngle)), @abs(combinedPos[2])*std.math.cos(verticalAngle)}
+	}
 };
