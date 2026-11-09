@@ -700,13 +700,12 @@ fn update() void { // MARK: update()
 	var entityData: main.ListManaged(main.entity.EntityNetworkData) = .init(main.stackAllocator);
 	defer entityData.deinit();
 
-	for (userList) |user| {
-		const id = user.id; // TODO
+	for (main.entity.components.@"cubyz:physics_body".server.components.denseToSparseIndex.items) |id| {
 		entityData.append(.{
 			.id = id,
-			.pos = @"cubyz:physics_body".getPosition(user.player().id, .server).?,
-			.vel = @"cubyz:physics_body".getVelocity(user.player().id, .server).?,
-			.rot = @"cubyz:physics_body".getRotation(user.player().id, .server).?,
+			.pos = @"cubyz:physics_body".getPosition(id, .server).?,
+			.vel = @"cubyz:physics_body".getVelocity(id, .server).?,
+			.rot = @"cubyz:physics_body".getRotation(id, .server).?,
 		});
 	}
 	for (userList) |user| {

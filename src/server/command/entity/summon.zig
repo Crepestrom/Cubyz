@@ -33,8 +33,13 @@ pub fn execute(args: Args, source: Source) void {
 			main.entity.components.@"cubyz:model".server.put(entity, .{.entityModel = defaultModel});
 		}
 	}
+	if (main.entity.components.@"cubyz:hovering_ai".server.get(entity) == null) {
+		main.entity.components.@"cubyz:hovering_ai".server.addToEntity(entity, 1);
+	}
+	if (main.entity.components.@"cubyz:physics_body".server.get(entity) == null) {
+		main.entity.components.@"cubyz:physics_body".server.loadFromPosition(entity, entityPos);
+	}
 	var serverEntity = main.server.Entity.createEmptyServerEntity(entity);
-	serverEntity.pos = entityPos;
 	serverEntity.name = "summoned entity";
 
 	const userList = main.server.getUserList(main.stackAllocator);
